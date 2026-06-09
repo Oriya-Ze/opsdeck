@@ -1,0 +1,22 @@
+name: Test Docker Compose and a few tests
+on:
+  push:
+    branches: [ "main", "dev" ]
+  jobs:
+    build-test-push:
+      runs-on: ubuntu-latest
+      steps:
+        - name: checkout repo
+          uses: actions/checkout@v4
+
+        - name: docker compose up
+          run: docker compose up -d --build --wait --wait-timeout 120
+
+        - name: smoke test for backend
+          run: curl -fsS "http://localhost:8000/api/health"
+
+        - name: smoke test for frontend
+          run: curl -fsS "http://localhost:3000"
+
+        - name: docker compose down
+          run: docker compose down -v
