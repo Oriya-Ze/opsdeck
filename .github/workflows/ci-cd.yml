@@ -12,9 +12,6 @@ jobs:
       - name: docker compose up
         run: docker compose up -d --build --wait --wait-timeout 120
 
-      - name: wait for backend
-        run: sleep 20
-
       - name: smoke test for backend
         run: curl -fsS "http://localhost:8000/api/health"
 
