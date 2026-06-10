@@ -38,3 +38,11 @@ class WorkloadResponse(WorkloadBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class WorkloadSyncResponse(BaseModel):
+    node_id: UUID
+    node_name: str
+    synced: int
+    removed: int
+    workloads: list[WorkloadResponse]

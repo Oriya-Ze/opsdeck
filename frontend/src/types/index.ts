@@ -169,3 +169,11 @@ export interface ContainerSyncResponse {
   removed: number
   containers: Container[]
 }
+
+export interface WorkloadSyncResponse {
+  node_id: string
+  node_name: string
+  synced: number
+  removed: number
+  workloads: Workload[]
+}

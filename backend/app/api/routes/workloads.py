@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,8 +14,14 @@ router = APIRouter(prefix="/workloads", tags=["Workloads"])
 
 
 @router.get("", response_model=list[WorkloadResponse])
-def list_workloads(db: Session = Depends(get_db)):
-    return db.query(Workload).order_by(Workload.namespace, Workload.name).all()
+def list_workloads(
+    node_id: UUID | None = Query(None, description="Filter workloads synced from this node"),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Workload)
+    if node_id:
+        query = query.filter(Workload.node_id == node_id)
+    return query.order_by(Workload.namespace, Workload.name).all()
 
 
 @router.post("", response_model=WorkloadResponse, status_code=status.HTTP_201_CREATED)

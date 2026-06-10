@@ -50,13 +50,16 @@ export const api = {
     ),
   syncNodeContainers: (nodeId: string) =>
     request<import('../types').ContainerSyncResponse>(`/nodes/${nodeId}/sync-containers`, { method: 'POST' }),
+  syncNodeWorkloads: (nodeId: string) =>
+    request<import('../types').WorkloadSyncResponse>(`/nodes/${nodeId}/sync-workloads`, { method: 'POST' }),
   createContainer: (data: import('../types').ContainerCreate) =>
     request<import('../types').Container>('/containers', { method: 'POST', body: JSON.stringify(data) }),
   updateContainer: (id: string, data: import('../types').ContainerUpdate) =>
     request<import('../types').Container>(`/containers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteContainer: (id: string) => request<void>(`/containers/${id}`, { method: 'DELETE' }),
 
-  getWorkloads: () => request<import('../types').Workload[]>('/workloads'),
+  getWorkloads: (nodeId?: string) =>
+    request<import('../types').Workload[]>(`/workloads${nodeId ? `?node_id=${nodeId}` : ''}`),
   createWorkload: (data: import('../types').WorkloadCreate) =>
     request<import('../types').Workload>('/workloads', { method: 'POST', body: JSON.stringify(data) }),
   updateWorkload: (id: string, data: import('../types').WorkloadUpdate) =>

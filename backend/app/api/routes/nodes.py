@@ -9,8 +9,10 @@ from app.models.node import Node
 from app.schemas.health_check import HealthCheckResponse
 from app.schemas.job import JobResponse
 from app.schemas.container import ContainerSyncResponse
+from app.schemas.workload import WorkloadSyncResponse
 from app.schemas.node import NodeCreate, NodeResponse, NodeTestConnectionResponse, NodeUpdate
 from app.services.docker_sync import sync_node_containers
+from app.services.k8s_sync import sync_node_workloads
 from app.services.activity_service import log_activity
 from app.services.job_runner import create_and_run_job
 from app.services.ssh_client import resolve_node_ssh_user, test_connection
@@ -149,6 +151,24 @@ def sync_containers(node_id: UUID, db: Session = Depends(get_db)):
         synced=synced,
         removed=removed,
         containers=containers,
+    )
+
+
+@router.post("/{node_id}/sync-workloads", response_model=WorkloadSyncResponse)
+def sync_workloads(node_id: UUID, db: Session = Depends(get_db)):
+    node = db.query(Node).filter(Node.id == node_id).first()
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+    try:
+        workloads, synced, removed = sync_node_workloads(db, node)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return WorkloadSyncResponse(
+        node_id=node.id,
+        node_name=node.name,
+        synced=synced,
+        removed=removed,
+        workloads=workloads,
     )
 
 

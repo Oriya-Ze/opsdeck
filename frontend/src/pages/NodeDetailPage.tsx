@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Container, HeartPulse, Package, Plug, RefreshCw, HardDrive, Database } from 'lucide-react'
+import { ArrowLeft, Box, Container, HeartPulse, Package, Plug, RefreshCw, HardDrive, Database } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 import { StatusBadge } from '../components/StatusBadge'
@@ -29,10 +29,16 @@ export function NodeDetailPage() {
     () => api.getContainers(id!),
     [id],
   )
+  const { data: workloads, loading: workloadsLoading, refetch: refetchWorkloads } = useFetch(
+    () => api.getWorkloads(id!),
+    [id],
+  )
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [testingConn, setTestingConn] = useState(false)
   const [syncingContainers, setSyncingContainers] = useState(false)
+  const [syncingWorkloads, setSyncingWorkloads] = useState(false)
   const [syncResult, setSyncResult] = useState<string | null>(null)
+  const [workloadSyncResult, setWorkloadSyncResult] = useState<string | null>(null)
   const [connResult, setConnResult] = useState<{ success: boolean; message: string } | null>(null)
 
   const nodeServices = services?.filter((s) => s.node_id === id) || []
@@ -62,6 +68,22 @@ export function NodeDetailPage() {
       setSyncResult(err instanceof Error ? err.message : 'Sync failed')
     } finally {
       setSyncingContainers(false)
+    }
+  }
+
+  const syncWorkloads = async () => {
+    setSyncingWorkloads(true)
+    setWorkloadSyncResult(null)
+    try {
+      const result = await api.syncNodeWorkloads(id!)
+      setWorkloadSyncResult(
+        `Synced ${result.synced} workload(s)${result.removed ? `, removed ${result.removed}` : ''}`,
+      )
+      refetchWorkloads()
+    } catch (err) {
+      setWorkloadSyncResult(err instanceof Error ? err.message : 'Sync failed')
+    } finally {
+      setSyncingWorkloads(false)
     }
   }
 
@@ -224,6 +246,55 @@ export function NodeDetailPage() {
                       <td className="table-cell font-mono text-xs text-gray-400 max-w-[140px] truncate">{c.image}</td>
                       <td className="table-cell font-mono text-sm">{c.cpu_usage.toFixed(1)}%</td>
                       <td className="table-cell font-mono text-sm">{c.memory_usage.toFixed(0)} MB</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Kubernetes Workloads</h2>
+            <button
+              className="btn-secondary flex items-center gap-2 text-xs py-1 px-2"
+              onClick={syncWorkloads}
+              disabled={syncingWorkloads}
+            >
+              <Box size={14} />
+              {syncingWorkloads ? 'Syncing...' : 'Sync Workloads'}
+            </button>
+          </div>
+          {workloadSyncResult && (
+            <p className={`text-xs mb-3 ${workloadSyncResult.includes('failed') || workloadSyncResult.includes('not') ? 'text-red-400' : 'text-emerald-400'}`}>
+              {workloadSyncResult}
+            </p>
+          )}
+          {workloadsLoading ? (
+            <p className="text-gray-500 text-sm">Loading...</p>
+          ) : !workloads || workloads.length === 0 ? (
+            <p className="text-gray-500 text-sm">No workloads synced. Click Sync to pull live data from Kubernetes.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="table-header">Name</th>
+                    <th className="table-header">Namespace</th>
+                    <th className="table-header">Kind</th>
+                    <th className="table-header">Replicas</th>
+                    <th className="table-header">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {workloads.map((w) => (
+                    <tr key={w.id} className="border-b border-border/50">
+                      <td className="table-cell font-medium text-white">{w.name}</td>
+                      <td className="table-cell font-mono text-sm">{w.namespace}</td>
+                      <td className="table-cell capitalize">{w.kind}</td>
+                      <td className="table-cell font-mono text-sm">{w.ready_replicas}/{w.replicas}</td>
+                      <td className="table-cell"><StatusBadge status={w.status} /></td>
                     </tr>
                   ))}
                 </tbody>
