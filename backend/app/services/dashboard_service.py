@@ -7,6 +7,7 @@ from app.models.job import Job
 from app.models.node import Node
 from app.models.service import Service
 from app.schemas.dashboard import DashboardStats
+from app.services.job_service import job_to_response
 
 
 def get_dashboard_stats(db: Session) -> DashboardStats:
@@ -34,6 +35,6 @@ def get_dashboard_stats(db: Session) -> DashboardStats:
         offline_nodes=offline_nodes,
         running_services=running_services,
         failed_services=failed_services,
-        recent_jobs=recent_jobs,
+        recent_jobs=[job_to_response(db, j) for j in recent_jobs],
         last_health_check_at=last_check,
     )

@@ -57,7 +57,8 @@ export const api = {
     request<import('../types').Workload>(`/workloads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteWorkload: (id: string) => request<void>(`/workloads/${id}`, { method: 'DELETE' }),
 
-  getJobs: () => request<import('../types').Job[]>('/jobs'),
+  getJobs: (nodeId?: string) =>
+    request<import('../types').Job[]>(`/jobs${nodeId ? `?node_id=${nodeId}` : ''}`),
   getJob: (id: string) => request<import('../types').Job>(`/jobs/${id}`),
   rerunJob: (id: string) => request<import('../types').Job>(`/jobs/${id}/rerun`, { method: 'POST' }),
 

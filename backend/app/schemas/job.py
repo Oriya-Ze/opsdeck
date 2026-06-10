@@ -12,6 +12,7 @@ class JobResponse(BaseModel):
     action_name: str
     target_type: str
     target_id: UUID
+    target_name: str | None = None
     status: str
     started_at: datetime | None = None
     finished_at: datetime | None = None

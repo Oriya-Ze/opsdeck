@@ -70,6 +70,7 @@ export interface Job {
   action_name: string
   target_type: string
   target_id: string
+  target_name: string | null
   status: string
   started_at: string | null
   finished_at: string | null

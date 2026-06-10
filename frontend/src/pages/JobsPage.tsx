@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { RefreshCw, Workflow } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
@@ -12,7 +13,12 @@ import { EmptyState } from '../components/EmptyState'
 import { formatDate } from '../utils/format'
 
 export function JobsPage() {
-  const { data: jobs, loading, error, refetch } = useFetch(() => api.getJobs())
+  const { data: nodes } = useFetch(() => api.getNodes())
+  const [nodeFilter, setNodeFilter] = useState('all')
+  const { data: jobs, loading, error, refetch } = useFetch(
+    () => api.getJobs(nodeFilter === 'all' ? undefined : nodeFilter),
+    [nodeFilter],
+  )
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
@@ -23,7 +29,8 @@ export function JobsPage() {
     return jobs.filter((j) => {
       const matchSearch =
         j.job_id.toLowerCase().includes(search.toLowerCase()) ||
-        j.action_name.toLowerCase().includes(search.toLowerCase())
+        j.action_name.toLowerCase().includes(search.toLowerCase()) ||
+        (j.target_name || '').toLowerCase().includes(search.toLowerCase())
       const matchStatus = statusFilter === 'all' || j.status === statusFilter
       return matchSearch && matchStatus
     })
@@ -39,7 +46,7 @@ export function JobsPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner />
+  if (loading && !jobs) return <LoadingSpinner />
 
   return (
     <div>
@@ -50,6 +57,16 @@ export function JobsPage() {
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <SearchInput value={search} onChange={setSearch} placeholder="Search jobs..." />
+        <select
+          className="select sm:w-44"
+          value={nodeFilter}
+          onChange={(e) => setNodeFilter(e.target.value)}
+        >
+          <option value="all">All nodes</option>
+          {nodes?.map((n) => (
+            <option key={n.id} value={n.id}>{n.name}</option>
+          ))}
+        </select>
         <select className="select sm:w-40" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="all">All statuses</option>
           <option value="pending">Pending</option>
@@ -74,6 +91,7 @@ export function JobsPage() {
               <tr className="border-b border-border">
                 <th className="table-header">Job ID</th>
                 <th className="table-header">Action</th>
+                <th className="table-header">Node</th>
                 <th className="table-header">Target</th>
                 <th className="table-header">Status</th>
                 <th className="table-header">Started</th>
@@ -93,7 +111,19 @@ export function JobsPage() {
                     </button>
                   </td>
                   <td className="table-cell capitalize">{job.action_name.replace(/-/g, ' ')}</td>
-                  <td className="table-cell capitalize">{job.target_type}</td>
+                  <td className="table-cell">
+                    {job.target_type === 'node' && job.target_name ? (
+                      <Link
+                        to={`/nodes/${job.target_id}`}
+                        className="text-accent hover:underline font-medium"
+                      >
+                        {job.target_name}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-500">—</span>
+                    )}
+                  </td>
+                  <td className="table-cell capitalize text-gray-400">{job.target_type}</td>
                   <td className="table-cell"><StatusBadge status={job.status} /></td>
                   <td className="table-cell text-gray-500 text-sm">{formatDate(job.started_at)}</td>
                   <td className="table-cell text-gray-500 text-sm">{formatDate(job.finished_at)}</td>
@@ -123,7 +153,17 @@ export function JobsPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div><span className="text-gray-400">Action:</span> <span className="capitalize">{selectedJob.action_name.replace(/-/g, ' ')}</span></div>
               <div><span className="text-gray-400">Status:</span> <StatusBadge status={selectedJob.status} /></div>
-              <div><span className="text-gray-400">Target:</span> <span className="capitalize">{selectedJob.target_type}</span></div>
+              <div>
+                <span className="text-gray-400">Node:</span>{' '}
+                {selectedJob.target_type === 'node' && selectedJob.target_name ? (
+                  <Link to={`/nodes/${selectedJob.target_id}`} className="text-accent hover:underline">
+                    {selectedJob.target_name}
+                  </Link>
+                ) : (
+                  '—'
+                )}
+              </div>
+              <div><span className="text-gray-400">Target type:</span> <span className="capitalize">{selectedJob.target_type}</span></div>
               <div><span className="text-gray-400">Created by:</span> {selectedJob.created_by}</div>
             </div>
             {selectedJob.output_log && (
