@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.mock.health_check_mock import run_service_health_check
+from app.services.service_health import run_service_health_check
 from app.models.node import Node
 from app.models.service import Service
 from app.schemas.health_check import HealthCheckResponse
@@ -16,8 +16,14 @@ router = APIRouter(prefix="/services", tags=["Services"])
 
 
 @router.get("", response_model=list[ServiceResponse])
-def list_services(db: Session = Depends(get_db)):
-    return db.query(Service).order_by(Service.name).all()
+def list_services(
+    node_id: UUID | None = Query(None, description="Filter services on this node"),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Service)
+    if node_id:
+        query = query.filter(Service.node_id == node_id)
+    return query.order_by(Service.name).all()
 
 
 @router.post("", response_model=ServiceResponse, status_code=status.HTTP_201_CREATED)
@@ -31,6 +37,18 @@ def create_service(data: ServiceCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(service)
     return service
+
+
+@router.post("/check-all", response_model=list[HealthCheckResponse])
+def check_all_services(
+    node_id: UUID | None = Query(None, description="Check only services on this node"),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Service)
+    if node_id:
+        query = query.filter(Service.node_id == node_id)
+    services = query.order_by(Service.name).all()
+    return [run_service_health_check(db, service) for service in services]
 
 
 @router.get("/{service_id}", response_model=ServiceResponse)

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { HeartPulse, Layers, Plus } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
@@ -10,6 +11,10 @@ import { SearchInput } from '../components/SearchInput'
 import { Modal } from '../components/Modal'
 import { EmptyState } from '../components/EmptyState'
 import { formatRelative } from '../utils/format'
+
+function isWebUrl(url: string): boolean {
+  return url.startsWith('http://') || url.startsWith('https://')
+}
 
 const defaultService: ServiceCreate = {
   name: '',
@@ -24,8 +29,12 @@ const defaultService: ServiceCreate = {
 }
 
 export function ServicesPage() {
-  const { data: services, loading, error, refetch } = useFetch(() => api.getServices())
   const { data: nodes } = useFetch(() => api.getNodes())
+  const [nodeFilter, setNodeFilter] = useState('all')
+  const { data: services, loading, error, refetch } = useFetch(
+    () => api.getServices(nodeFilter === 'all' ? undefined : nodeFilter),
+    [nodeFilter],
+  )
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -33,6 +42,8 @@ export function ServicesPage() {
   const [form, setForm] = useState<ServiceCreate>(defaultService)
   const [saving, setSaving] = useState(false)
   const [checkingId, setCheckingId] = useState<string | null>(null)
+  const [checkingAll, setCheckingAll] = useState(false)
+  const [checkAllSummary, setCheckAllSummary] = useState<string | null>(null)
 
   const nodeMap = useMemo(() => {
     const m = new Map<string, string>()
@@ -97,6 +108,7 @@ export function ServicesPage() {
 
   const runHealthCheck = async (id: string) => {
     setCheckingId(id)
+    setCheckAllSummary(null)
     try {
       await api.runServiceHealthCheck(id)
       refetch()
@@ -105,7 +117,36 @@ export function ServicesPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner />
+  const runAllHealthChecks = async () => {
+    if (!services?.length) return
+    setCheckingAll(true)
+    setCheckAllSummary(null)
+    try {
+      const results = await api.runAllServiceHealthChecks(
+        nodeFilter === 'all' ? undefined : nodeFilter,
+      )
+      const counts = results.reduce(
+        (acc, r) => {
+          acc[r.status] = (acc[r.status] || 0) + 1
+          return acc
+        },
+        {} as Record<string, number>,
+      )
+      const parts = [
+        counts.success ? `${counts.success} up` : null,
+        counts.warning ? `${counts.warning} warning` : null,
+        counts.failed ? `${counts.failed} down` : null,
+      ].filter(Boolean)
+      setCheckAllSummary(`Checked ${results.length} services: ${parts.join(', ')}`)
+      refetch()
+    } catch (err) {
+      setCheckAllSummary(err instanceof Error ? err.message : 'Check all failed')
+    } finally {
+      setCheckingAll(false)
+    }
+  }
+
+  if (loading && !services) return <LoadingSpinner />
 
   return (
     <div>
@@ -119,8 +160,18 @@ export function ServicesPage() {
         }
       />
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-3">
         <SearchInput value={search} onChange={setSearch} placeholder="Search services..." />
+        <select
+          className="select sm:w-44"
+          value={nodeFilter}
+          onChange={(e) => setNodeFilter(e.target.value)}
+        >
+          <option value="all">All nodes</option>
+          {nodes?.map((n) => (
+            <option key={n.id} value={n.id}>{n.name}</option>
+          ))}
+        </select>
         <select className="select sm:w-44" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
           <option value="all">All categories</option>
           <option value="monitoring">Monitoring</option>
@@ -132,7 +183,19 @@ export function ServicesPage() {
           <option value="app">App</option>
           <option value="other">Other</option>
         </select>
+        <button
+          className="btn-secondary flex items-center gap-2 whitespace-nowrap"
+          onClick={runAllHealthChecks}
+          disabled={checkingAll || !services?.length}
+        >
+          <HeartPulse size={16} className={checkingAll ? 'animate-pulse' : ''} />
+          {checkingAll ? 'Checking...' : 'Check All'}
+        </button>
       </div>
+
+      {checkAllSummary && (
+        <div className="card text-sm text-gray-300 mb-4 py-3">{checkAllSummary}</div>
+      )}
 
       {error && <div className="card text-red-400 mb-4">{error}</div>}
 
@@ -158,11 +221,41 @@ export function ServicesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s) => (
+              {filtered.map((s) => {
+                const nodeName = nodeMap.get(s.node_id)
+                return (
                 <tr key={s.id} className="border-b border-border/50 hover:bg-surface-overlay/50">
                   <td className="table-cell font-medium text-white">{s.name}</td>
-                  <td className="table-cell">{nodeMap.get(s.node_id) || '—'}</td>
-                  <td className="table-cell font-mono text-sm text-gray-400">{s.url || '—'}</td>
+                  <td className="table-cell">
+                    {nodeName ? (
+                      <Link
+                        to={`/nodes/${s.node_id}`}
+                        className="text-accent hover:underline font-medium"
+                      >
+                        {nodeName}
+                      </Link>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className="table-cell">
+                    {s.url ? (
+                      isWebUrl(s.url) ? (
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-sm text-accent hover:underline"
+                        >
+                          {s.url}
+                        </a>
+                      ) : (
+                        <span className="font-mono text-sm text-gray-400">{s.url}</span>
+                      )
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="table-cell capitalize">{s.category.replace(/-/g, '/')}</td>
                   <td className="table-cell"><StatusBadge status={s.status} /></td>
                   <td className="table-cell text-gray-500">{formatRelative(s.last_checked_at)}</td>
@@ -171,7 +264,7 @@ export function ServicesPage() {
                       <button
                         className="btn-secondary text-xs py-1 px-2 flex items-center gap-1"
                         onClick={() => runHealthCheck(s.id)}
-                        disabled={checkingId === s.id}
+                        disabled={checkingId === s.id || checkingAll}
                       >
                         <HeartPulse size={12} />
                         {checkingId === s.id ? '...' : 'Check'}
@@ -181,7 +274,7 @@ export function ServicesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

@@ -28,7 +28,8 @@ export const api = {
   runNodeAction: (id: string, action: string) =>
     request<import('../types').Job>(`/nodes/${id}/actions/${action}`, { method: 'POST' }),
 
-  getServices: () => request<import('../types').Service[]>('/services'),
+  getServices: (nodeId?: string) =>
+    request<import('../types').Service[]>(`/services${nodeId ? `?node_id=${nodeId}` : ''}`),
   getService: (id: string) => request<import('../types').Service>(`/services/${id}`),
   createService: (data: import('../types').ServiceCreate) =>
     request<import('../types').Service>('/services', { method: 'POST', body: JSON.stringify(data) }),
@@ -37,6 +38,11 @@ export const api = {
   deleteService: (id: string) => request<void>(`/services/${id}`, { method: 'DELETE' }),
   runServiceHealthCheck: (id: string) =>
     request<import('../types').HealthCheck>(`/services/${id}/health-check`, { method: 'POST' }),
+  runAllServiceHealthChecks: (nodeId?: string) =>
+    request<import('../types').HealthCheck[]>(
+      `/services/check-all${nodeId ? `?node_id=${nodeId}` : ''}`,
+      { method: 'POST' },
+    ),
 
   getContainers: (nodeId?: string) =>
     request<import('../types').Container[]>(
