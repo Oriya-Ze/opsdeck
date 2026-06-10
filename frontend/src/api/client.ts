@@ -66,6 +66,15 @@ export const api = {
     request<import('../types').Workload>(`/workloads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteWorkload: (id: string) => request<void>(`/workloads/${id}`, { method: 'DELETE' }),
 
+  getJobActions: () => request<import('../types').JobAction[]>('/jobs/actions'),
+
+  getPlaybooks: () => request<import('../types').CustomPlaybook[]>('/playbooks'),
+  getBuiltinPlaybooks: () => request<import('../types').JobAction[]>('/playbooks/builtin/list'),
+  createPlaybook: (data: import('../types').CustomPlaybookCreate) =>
+    request<import('../types').CustomPlaybook>('/playbooks', { method: 'POST', body: JSON.stringify(data) }),
+  updatePlaybook: (id: string, data: Partial<import('../types').CustomPlaybookCreate>) =>
+    request<import('../types').CustomPlaybook>(`/playbooks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePlaybook: (id: string) => request<void>(`/playbooks/${id}`, { method: 'DELETE' }),
   getJobs: (nodeId?: string) =>
     request<import('../types').Job[]>(`/jobs${nodeId ? `?node_id=${nodeId}` : ''}`),
   getJob: (id: string) => request<import('../types').Job>(`/jobs/${id}`),

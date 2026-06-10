@@ -64,6 +64,39 @@ export interface Workload {
   updated_at: string
 }
 
+export interface JobAction {
+  name: string
+  label: string
+  description: string
+  requires_sudo: boolean
+  timeout_seconds: number
+  runner: string
+  source: string
+  is_editable: boolean
+  custom_id: string | null
+}
+
+export interface CustomPlaybook {
+  id: string
+  name: string
+  label: string
+  description: string | null
+  playbook_content: string
+  requires_sudo: boolean
+  timeout_seconds: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomPlaybookCreate {
+  name: string
+  label: string
+  description?: string
+  playbook_content: string
+  requires_sudo: boolean
+  timeout_seconds: number
+}
+
 export interface Job {
   id: string
   job_id: string

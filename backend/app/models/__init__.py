@@ -6,6 +6,7 @@ from app.models.job import Job
 from app.models.health_check import HealthCheck
 from app.models.activity_log import ActivityLog
 from app.models.ssh_settings import SshSettings
+from app.models.custom_playbook import CustomPlaybook
 
 __all__ = [
     "Node",
@@ -16,4 +17,5 @@ __all__ = [
     "HealthCheck",
     "ActivityLog",
     "SshSettings",
+    "CustomPlaybook",
 ]

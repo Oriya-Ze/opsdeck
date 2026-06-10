@@ -7,6 +7,7 @@ from app.api.routes import (
     health_checks,
     jobs,
     nodes,
+    playbooks,
     services,
     settings,
     system,
@@ -21,6 +22,7 @@ api_router.include_router(services.router)
 api_router.include_router(containers.router)
 api_router.include_router(workloads.router)
 api_router.include_router(jobs.router)
+api_router.include_router(playbooks.router)
 api_router.include_router(health_checks.router)
 api_router.include_router(activity_logs.router)
 api_router.include_router(settings.router)

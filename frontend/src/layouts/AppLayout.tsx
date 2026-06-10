@@ -9,6 +9,7 @@ import {
   Settings,
   Workflow,
   Zap,
+  FileCode,
 } from 'lucide-react'
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
   { to: '/containers', icon: Container, label: 'Containers' },
   { to: '/kubernetes', icon: Box, label: 'Kubernetes' },
   { to: '/jobs', icon: Workflow, label: 'Jobs' },
+  { to: '/playbooks', icon: FileCode, label: 'Playbooks' },
   { to: '/activity', icon: Activity, label: 'Activity Log' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]

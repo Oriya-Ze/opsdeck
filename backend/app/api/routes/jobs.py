@@ -7,11 +7,32 @@ from app.core.database import get_db
 from app.models.enums import JobTargetType
 from app.models.job import Job
 from app.models.node import Node
+from app.schemas.custom_playbook import PlaybookActionResponse
 from app.schemas.job import JobResponse
+from app.services.ansible_runner import get_action_catalog, is_ansible_available
 from app.services.job_runner import rerun_job
 from app.services.job_service import job_to_response
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
+
+
+@router.get("/actions", response_model=list[PlaybookActionResponse])
+def list_job_actions(db: Session = Depends(get_db)):
+    runner = "ansible" if is_ansible_available() else "shell"
+    return [
+        PlaybookActionResponse(
+            name=action.name,
+            label=action.label,
+            description=action.description,
+            requires_sudo=action.requires_sudo,
+            timeout_seconds=action.timeout_seconds,
+            source=action.source,
+            runner=runner,
+            is_editable=action.source == "custom",
+            custom_id=action.custom_id,
+        )
+        for action in get_action_catalog(db)
+    ]
 
 
 @router.get("", response_model=list[JobResponse])

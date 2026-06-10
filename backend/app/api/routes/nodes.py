@@ -14,21 +14,13 @@ from app.schemas.node import NodeCreate, NodeResponse, NodeTestConnectionRespons
 from app.services.docker_sync import sync_node_containers
 from app.services.k8s_sync import sync_node_workloads
 from app.services.activity_service import log_activity
+from app.services.ansible_runner import get_action_info
 from app.services.job_runner import create_and_run_job
 from app.services.ssh_client import resolve_node_ssh_user, test_connection
 from app.services.ssh_credentials import get_decrypted_private_key
 from app.services.ssh_health import run_node_health_check
 
 router = APIRouter(prefix="/nodes", tags=["Nodes"])
-
-NODE_ACTIONS = {
-    "health-check",
-    "update-packages",
-    "restart-docker",
-    "install-node-exporter",
-    "run-backup",
-}
-
 
 @router.get("", response_model=list[NodeResponse])
 def list_nodes(db: Session = Depends(get_db)):
@@ -182,7 +174,7 @@ def node_health_check(node_id: UUID, db: Session = Depends(get_db)):
 
 @router.post("/{node_id}/actions/{action_name}", response_model=JobResponse)
 def node_action(node_id: UUID, action_name: str, db: Session = Depends(get_db)):
-    if action_name not in NODE_ACTIONS:
+    if not get_action_info(db, action_name):
         raise HTTPException(status_code=400, detail=f"Unknown action: {action_name}")
 
     node = db.query(Node).filter(Node.id == node_id).first()

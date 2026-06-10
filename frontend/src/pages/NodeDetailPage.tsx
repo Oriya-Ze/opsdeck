@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Box, Container, HeartPulse, Package, Plug, RefreshCw, HardDrive, Database } from 'lucide-react'
+import {
+  ArrowLeft,
+  Box,
+  Container,
+  HeartPulse,
+  Package,
+  Plug,
+  RefreshCw,
+  HardDrive,
+  Database,
+  type LucideIcon,
+} from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 import { StatusBadge } from '../components/StatusBadge'
@@ -8,17 +19,18 @@ import { UsageBar } from '../components/UsageBar'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { formatDate, formatRelative } from '../utils/format'
 
-const ACTIONS = [
-  { name: 'health-check', label: 'Run Health Check', icon: HeartPulse },
-  { name: 'update-packages', label: 'Update Packages', icon: Package },
-  { name: 'restart-docker', label: 'Restart Docker', icon: RefreshCw },
-  { name: 'install-node-exporter', label: 'Install Node Exporter', icon: Database },
-  { name: 'run-backup', label: 'Run Backup', icon: HardDrive },
-]
+const ACTION_ICONS: Record<string, LucideIcon> = {
+  'health-check': HeartPulse,
+  'update-packages': Package,
+  'restart-docker': RefreshCw,
+  'install-node-exporter': Database,
+  'run-backup': HardDrive,
+}
 
 export function NodeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: node, loading, error, refetch } = useFetch(() => api.getNode(id!), [id])
+  const { data: jobActions } = useFetch(() => api.getJobActions())
   const { data: services } = useFetch(() => api.getServices())
   const { data: healthChecks, refetch: refetchHC } = useFetch(
     () => api.getHealthChecks({ target_type: 'node', target_id: id!, limit: 10 }),
@@ -135,17 +147,21 @@ export function NodeDetailPage() {
             <Plug size={14} />
             {testingConn ? 'Testing...' : 'Test SSH'}
           </button>
-          {ACTIONS.map(({ name, label, icon: Icon }) => (
-            <button
-              key={name}
-              className="btn-secondary flex items-center gap-2 text-xs"
-              onClick={() => runAction(name)}
-              disabled={actionLoading !== null}
-            >
-              <Icon size={14} />
-              {actionLoading === name ? 'Running...' : label}
-            </button>
-          ))}
+          {jobActions?.map(({ name, label, description, requires_sudo, runner, source }) => {
+            const Icon = ACTION_ICONS[name] || Package
+            return (
+              <button
+                key={name}
+                className="btn-secondary flex items-center gap-2 text-xs"
+                onClick={() => runAction(name)}
+                disabled={actionLoading !== null}
+                title={`${description}${requires_sudo ? ' (requires passwordless sudo)' : ''} · ${runner}${source === 'custom' ? ' · custom' : ''}`}
+              >
+                <Icon size={14} />
+                {actionLoading === name ? 'Running...' : label}
+              </button>
+            )
+          })}
         </div>
       </div>
 

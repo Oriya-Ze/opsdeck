@@ -1,0 +1,17 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Restart Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted
+
+    - name: Verify Docker is active
+      ansible.builtin.systemd:
+        name: docker
+      register: docker_status
+
+    - name: Docker status
+      ansible.builtin.debug:
+        msg: "Docker is {{ docker_status.status.ActiveState }}"

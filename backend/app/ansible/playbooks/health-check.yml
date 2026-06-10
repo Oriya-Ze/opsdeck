@@ -1,0 +1,25 @@
+---
+- hosts: all
+  gather_facts: true
+  tasks:
+    - name: Uptime
+      ansible.builtin.command: uptime
+      register: uptime_out
+      changed_when: false
+
+    - name: Memory usage
+      ansible.builtin.command: free -h
+      register: mem_out
+      changed_when: false
+
+    - name: Disk usage
+      ansible.builtin.command: df -h /
+      register: disk_out
+      changed_when: false
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "{{ uptime_out.stdout }}"
+          - "{{ mem_out.stdout }}"
+          - "{{ disk_out.stdout }}"

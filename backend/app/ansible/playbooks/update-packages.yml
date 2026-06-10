@@ -1,0 +1,21 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Upgrade apt packages
+      ansible.builtin.apt:
+        upgrade: dist
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Upgrade dnf packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      when: ansible_facts['os_family'] == "RedHat"

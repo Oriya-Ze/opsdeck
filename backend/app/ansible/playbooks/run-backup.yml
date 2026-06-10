@@ -1,0 +1,24 @@
+---
+- hosts: all
+  become: true
+  vars:
+    backup_dest: "/tmp/opsdeck-backup-{{ ansible_date_time.date }}.tar.gz"
+  tasks:
+    - name: Create backup archive
+      ansible.builtin.archive:
+        path:
+          - /etc
+          - /home
+        dest: "{{ backup_dest }}"
+        format: gz
+      ignore_errors: true
+
+    - name: Show backup file details
+      ansible.builtin.command: ls -lh {{ backup_dest }}
+      register: backup_ls
+      changed_when: false
+      failed_when: false
+
+    - name: Backup result
+      ansible.builtin.debug:
+        msg: "{{ backup_ls.stdout | default('Backup archive step completed (check path permissions).') }}"
