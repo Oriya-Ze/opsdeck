@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle, Container, Copy, Key, RefreshCw, Shield, Trash2, Webhook } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { CheckCircle, Container, Copy, Key, LineChart, RefreshCw, Shield, Trash2, Webhook } from 'lucide-react'
 import { api } from '../api/client'
 import { PageHeader } from '../components/PageHeader'
 import type { SshGenerateResponse, SshSettings, SyncSettings } from '../types'
@@ -30,7 +31,6 @@ export function SettingsPage() {
   const [syncSaving, setSyncSaving] = useState(false)
   const [syncRunning, setSyncRunning] = useState(false)
   const [syncRunMsg, setSyncRunMsg] = useState<string | null>(null)
-
   const loadSettings = async () => {
     setLoading(true)
     try {
@@ -365,6 +365,22 @@ export function SettingsPage() {
             </p>
           )}
         </form>
+      </div>
+
+      {/* Monitoring */}
+      <div className="card mb-6 flex items-start gap-4">
+        <div className="p-3 rounded-lg bg-accent/15 text-accent">
+          <LineChart size={22} />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-white text-lg">Monitoring</h3>
+          <p className="text-sm text-gray-400 mt-1">
+            Prometheus metrics, Grafana dashboards, and scrape targets live on the Monitoring page.
+          </p>
+          <Link to="/monitoring" className="btn-primary inline-flex items-center gap-2 mt-4">
+            <LineChart size={14} /> Open Monitoring
+          </Link>
+        </div>
       </div>
 
       {/* Coming soon integrations */}

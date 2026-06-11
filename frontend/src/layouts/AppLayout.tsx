@@ -10,6 +10,7 @@ import {
   Workflow,
   Zap,
   FileCode,
+  LineChart,
 } from 'lucide-react'
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { to: '/jobs', icon: Workflow, label: 'Jobs' },
   { to: '/playbooks', icon: FileCode, label: 'Playbooks' },
   { to: '/activity', icon: Activity, label: 'Activity Log' },
+  { to: '/monitoring', icon: LineChart, label: 'Monitoring' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 

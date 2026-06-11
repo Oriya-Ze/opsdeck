@@ -173,7 +173,13 @@ def run_node_health_check_ssh(db: Session, node: Node) -> HealthCheck:
 
 
 def run_node_health_check(db: Session, node: Node) -> HealthCheck:
-    """Run real SSH health check if configured, otherwise fall back to mock."""
+    """Prefer Prometheus node_exporter metrics; fall back to SSH when unavailable."""
+    from app.services.prometheus_node_sync import sync_node_from_prometheus
+
+    prom_check = sync_node_from_prometheus(db, node)
+    if prom_check is not None:
+        return prom_check
+
     if is_ssh_configured(db):
         return run_node_health_check_ssh(db, node)
     from app.mock.health_check_mock import run_node_health_check as run_mock

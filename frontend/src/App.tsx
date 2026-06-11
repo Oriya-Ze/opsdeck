@@ -9,6 +9,7 @@ import { KubernetesPage } from './pages/KubernetesPage'
 import { JobsPage } from './pages/JobsPage'
 import { PlaybooksPage } from './pages/PlaybooksPage'
 import { ActivityLogPage } from './pages/ActivityLogPage'
+import { MonitoringPage } from './pages/MonitoringPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="jobs" element={<JobsPage />} />
         <Route path="playbooks" element={<PlaybooksPage />} />
         <Route path="activity" element={<ActivityLogPage />} />
+        <Route path="monitoring" element={<MonitoringPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

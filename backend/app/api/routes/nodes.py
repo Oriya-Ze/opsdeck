@@ -18,6 +18,7 @@ from app.services.ansible_runner import get_action_info
 from app.services.job_runner import create_and_run_job
 from app.services.ssh_client import resolve_node_ssh_user, test_connection
 from app.services.ssh_credentials import get_decrypted_private_key
+from app.services.prometheus_targets import write_prometheus_targets
 from app.services.ssh_health import run_node_health_check
 
 router = APIRouter(prefix="/nodes", tags=["Nodes"])
@@ -45,6 +46,7 @@ def create_node(data: NodeCreate, db: Session = Depends(get_db)):
         related_entity_type="node",
         related_entity_id=node.id,
     )
+    write_prometheus_targets(db)
     return node
 
 
@@ -75,6 +77,7 @@ def update_node(node_id: UUID, data: NodeUpdate, db: Session = Depends(get_db)):
         related_entity_type="node",
         related_entity_id=node.id,
     )
+    write_prometheus_targets(db)
     return node
 
 
@@ -95,6 +98,7 @@ def delete_node(node_id: UUID, db: Session = Depends(get_db)):
         related_entity_type="node",
         related_entity_id=node_id,
     )
+    write_prometheus_targets(db)
 
 
 @router.post("/{node_id}/test-connection", response_model=NodeTestConnectionResponse)

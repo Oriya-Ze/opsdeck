@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.metrics import CONTAINER_SYNC_NODES, CONTAINER_SYNC_RUNS
 from app.models.enums import ActivityEventType, ActivitySeverity
 from app.models.node import Node
 from app.services.activity_service import log_activity
@@ -92,6 +93,13 @@ def run_containers_auto_sync(db: Session, *, force: bool = False) -> AutoSyncRes
         result.summary += f", {result.nodes_failed} failed"
 
     record_auto_sync_result(db, result.summary)
+
+    if not result.skipped:
+        CONTAINER_SYNC_RUNS.inc()
+        if result.nodes_succeeded:
+            CONTAINER_SYNC_NODES.labels(result="success").inc(result.nodes_succeeded)
+        if result.nodes_failed:
+            CONTAINER_SYNC_NODES.labels(result="failed").inc(result.nodes_failed)
 
     if result.nodes_succeeded or result.nodes_failed:
         severity = ActivitySeverity.WARNING.value if result.nodes_failed else ActivitySeverity.INFO.value

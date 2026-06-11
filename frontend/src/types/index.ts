@@ -162,6 +162,75 @@ export interface SyncSettings {
   updated_at: string | null
 }
 
+export interface PrometheusTarget {
+  targets: string[]
+  labels: Record<string, string>
+}
+
+export interface MonitoringStatus {
+  prometheus_url: string
+  grafana_url: string
+  grafana_embed_url: string
+  node_exporter_port: number
+  targets_count: number
+  targets: PrometheusTarget[]
+  targets_file: string
+  targets_updated_at: string | null
+}
+
+export interface MonitoringOverview {
+  healthy_nodes: number | null
+  running_containers: number | null
+  up_services: number | null
+  scrape_targets: number | null
+  sync_runs_hour: number | null
+  api_request_rate: number | null
+  node_exporters_up: number | null
+  node_exporters_total: number | null
+  prometheus_reachable: boolean
+  prometheus_error: string | null
+}
+
+export interface ScrapeTargetStatus {
+  job: string
+  instance: string
+  health: string
+  scrape_url: string
+  last_scrape: string | null
+  last_error: string | null
+}
+
+export interface ScrapeTargetsResponse {
+  targets: ScrapeTargetStatus[]
+  up: number
+  down: number
+  unknown: number
+}
+
+export interface PrometheusSeriesPoint {
+  timestamp: number
+  value: number
+}
+
+export interface PrometheusSeries {
+  metric: Record<string, string>
+  points: PrometheusSeriesPoint[]
+}
+
+export interface PrometheusQueryRangeResponse {
+  query: string
+  series: PrometheusSeries[]
+}
+
+export interface NodePrometheusSyncResponse {
+  nodes_attempted: number
+  nodes_synced: number
+  nodes_skipped: number
+  nodes_failed: number
+  summary: string
+  errors: string[]
+}
+
 export interface AutoSyncRunResponse {
   nodes_attempted: number
   nodes_succeeded: number

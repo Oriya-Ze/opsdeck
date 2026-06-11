@@ -39,7 +39,7 @@ BUILTIN_ACTIONS: list[JobActionInfo] = [
     JobActionInfo(
         name="health-check",
         label="Run Health Check",
-        description="Gather uptime, memory, and disk usage from the node.",
+        description="Sync from Prometheus when node_exporter is available, otherwise SSH.",
         requires_sudo=False,
         timeout_seconds=120,
     ),

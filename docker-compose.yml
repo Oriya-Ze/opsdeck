@@ -23,6 +23,13 @@ services:
       DATABASE_URL: postgresql://opsdeck:opsdeck@postgres:5432/opsdeck
       CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
       ENCRYPTION_KEY: opsdeck-dev-key-change-in-production-32b=
+      PROMETHEUS_FILE_SD_DIR: /app/prometheus/file_sd
+      PROMETHEUS_INTERNAL_URL: http://prometheus:9090
+      PROMETHEUS_URL: http://localhost:9090
+      GRAFANA_URL: http://localhost:3001
+      GRAFANA_EMBED_URL: http://localhost:3001/d/opsdeck-overview/opsdeck-overview?orgId=1&theme=dark&kiosk
+    volumes:
+      - ./prometheus/file_sd:/app/prometheus/file_sd
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,5 +54,41 @@ services:
       retries: 3
       start_period: 10s
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/file_sd:/etc/prometheus/file_sd:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      backend:
+        condition: service_healthy
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: opsdeck
+      GF_USERS_DEFAULT_THEME: dark
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:

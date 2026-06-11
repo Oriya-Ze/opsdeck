@@ -6,6 +6,7 @@ from app.api.routes import (
     dashboard,
     health_checks,
     jobs,
+    monitoring,
     nodes,
     playbooks,
     services,
@@ -26,3 +27,4 @@ api_router.include_router(playbooks.router)
 api_router.include_router(health_checks.router)
 api_router.include_router(activity_logs.router)
 api_router.include_router(settings.router)
+api_router.include_router(monitoring.router)

@@ -1,0 +1,42 @@
+[
+  {
+    "targets": [
+      "192.168.1.30:9100"
+    ],
+    "labels": {
+      "node": "k3s-master-01",
+      "instance": "k3s-master-01",
+      "opsdeck_node_id": "383fadb4-3e3d-48e0-8810-33ed96e82b5b"
+    }
+  },
+  {
+    "targets": [
+      "192.168.1.10:9100"
+    ],
+    "labels": {
+      "node": "raspberry-pi-01",
+      "instance": "raspberry-pi-01",
+      "opsdeck_node_id": "24d72354-49fb-417e-a5d6-c21f71ece9f9"
+    }
+  },
+  {
+    "targets": [
+      "172.20.241.227:9100"
+    ],
+    "labels": {
+      "node": "test-wsl",
+      "instance": "test-wsl",
+      "opsdeck_node_id": "5d16c444-6e0d-4510-9da9-2e27a25e2550"
+    }
+  },
+  {
+    "targets": [
+      "192.168.1.20:9100"
+    ],
+    "labels": {
+      "node": "ubuntu-vm-01",
+      "instance": "ubuntu-vm-01",
+      "opsdeck_node_id": "543c0d40-a328-46ef-a764-4daa9ab7aeff"
+    }
+  }
+]

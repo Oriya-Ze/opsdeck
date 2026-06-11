@@ -107,6 +107,19 @@ export const api = {
   runContainerAutoSync: () =>
     request<import('../types').AutoSyncRunResponse>('/settings/sync/run-now', { method: 'POST' }),
 
+  getMonitoringStatus: () => request<import('../types').MonitoringStatus>('/monitoring/status'),
+  refreshMonitoringTargets: () =>
+    request<import('../types').MonitoringStatus>('/monitoring/targets/refresh', { method: 'POST' }),
+  getMonitoringOverview: () => request<import('../types').MonitoringOverview>('/monitoring/overview'),
+  getPrometheusTargets: () =>
+    request<import('../types').ScrapeTargetsResponse>('/monitoring/prometheus/targets'),
+  getPrometheusQueryRange: (query: string, hours = 6) =>
+    request<import('../types').PrometheusQueryRangeResponse>(
+      `/monitoring/prometheus/query-range?${new URLSearchParams({ query, hours: String(hours) })}`,
+    ),
+  syncNodesFromPrometheus: () =>
+    request<import('../types').NodePrometheusSyncResponse>('/monitoring/nodes/sync', { method: 'POST' }),
+
   testNodeConnection: (id: string) =>
     request<import('../types').NodeTestConnectionResponse>(`/nodes/${id}/test-connection`, { method: 'POST' }),
 }

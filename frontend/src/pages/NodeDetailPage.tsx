@@ -29,7 +29,9 @@ const ACTION_ICONS: Record<string, LucideIcon> = {
 
 export function NodeDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: node, loading, error, refetch } = useFetch(() => api.getNode(id!), [id])
+  const { data: node, loading, error, refetch } = useFetch(() => api.getNode(id!), [id], {
+    pollIntervalMs: 60_000,
+  })
   const { data: jobActions } = useFetch(() => api.getJobActions())
   const { data: services } = useFetch(() => api.getServices())
   const { data: healthChecks, refetch: refetchHC } = useFetch(
@@ -195,7 +197,8 @@ export function NodeDetailPage() {
         </div>
 
         <div className="card lg:col-span-2">
-          <h2 className="text-lg font-semibold text-white mb-4">Resource Usage</h2>
+          <h2 className="text-lg font-semibold text-white mb-1">Resource Usage</h2>
+          <p className="text-xs text-gray-500 mb-4">Auto-synced from Prometheus when node_exporter is installed</p>
           <div className="space-y-4">
             <UsageBar label="CPU" value={node.cpu_usage} />
             <UsageBar label="RAM" value={node.ram_usage} />

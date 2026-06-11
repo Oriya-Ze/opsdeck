@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  LineChart,
   Server,
   ServerOff,
   XCircle,
@@ -16,7 +17,7 @@ import { PageHeader } from '../components/PageHeader'
 import { formatDate, formatRelative } from '../utils/format'
 
 export function DashboardPage() {
-  const { data, loading, error } = useFetch(() => api.getDashboardStats())
+  const { data, loading, error } = useFetch(() => api.getDashboardStats(), [], { pollIntervalMs: 60_000 })
 
   if (loading) return <LoadingSpinner />
   if (error || !data) {
@@ -31,7 +32,12 @@ export function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Overview of your HomeLab infrastructure"
+        description="Operational snapshot of your HomeLab — nodes, services, and recent jobs"
+        actions={
+          <Link to="/monitoring" className="btn-secondary flex items-center gap-2">
+            <LineChart size={14} /> Metrics &amp; Grafana
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
