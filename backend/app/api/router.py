@@ -12,6 +12,7 @@ from app.api.routes import (
     services,
     settings,
     system,
+    terminal,
     workloads,
 )
 
@@ -28,3 +29,4 @@ api_router.include_router(health_checks.router)
 api_router.include_router(activity_logs.router)
 api_router.include_router(settings.router)
 api_router.include_router(monitoring.router)
+api_router.include_router(terminal.router)

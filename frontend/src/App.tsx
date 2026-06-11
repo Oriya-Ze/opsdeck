@@ -11,6 +11,7 @@ import { PlaybooksPage } from './pages/PlaybooksPage'
 import { ActivityLogPage } from './pages/ActivityLogPage'
 import { MonitoringPage } from './pages/MonitoringPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { TerminalPage } from './pages/TerminalPage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="playbooks" element={<PlaybooksPage />} />
         <Route path="activity" element={<ActivityLogPage />} />
         <Route path="monitoring" element={<MonitoringPage />} />
+        <Route path="terminal" element={<TerminalPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

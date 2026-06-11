@@ -120,6 +120,8 @@ export const api = {
   syncNodesFromPrometheus: () =>
     request<import('../types').NodePrometheusSyncResponse>('/monitoring/nodes/sync', { method: 'POST' }),
 
+  getTerminalOptions: () => request<import('../types').TerminalOptionsResponse>('/terminal/options'),
+
   testNodeConnection: (id: string) =>
     request<import('../types').NodeTestConnectionResponse>(`/nodes/${id}/test-connection`, { method: 'POST' }),
 }

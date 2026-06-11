@@ -222,6 +222,18 @@ export interface PrometheusQueryRangeResponse {
   series: PrometheusSeries[]
 }
 
+export interface TerminalTargetOption {
+  id: string
+  label: string
+  description: string
+  target: string
+  node_id: string | null
+}
+
+export interface TerminalOptionsResponse {
+  targets: TerminalTargetOption[]
+}
+
 export interface NodePrometheusSyncResponse {
   nodes_attempted: number
   nodes_synced: number

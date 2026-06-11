@@ -11,6 +11,7 @@ import {
   Zap,
   FileCode,
   LineChart,
+  Terminal,
 } from 'lucide-react'
 
 const navItems = [
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/playbooks', icon: FileCode, label: 'Playbooks' },
   { to: '/activity', icon: Activity, label: 'Activity Log' },
   { to: '/monitoring', icon: LineChart, label: 'Monitoring' },
+  { to: '/terminal', icon: Terminal, label: 'Terminal' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
