@@ -26,6 +26,7 @@ const defaultNode: NodeCreate = {
   ram_usage: 0,
   disk_usage: 0,
   uptime: 'unknown',
+  auto_sync_containers: true,
   notes: '',
 }
 
@@ -72,6 +73,7 @@ export function NodesPage() {
       ram_usage: node.ram_usage,
       disk_usage: node.disk_usage,
       uptime: node.uptime,
+      auto_sync_containers: node.auto_sync_containers,
       notes: node.notes || '',
     })
     setModalOpen(true)
@@ -227,7 +229,17 @@ export function NodesPage() {
               </select>
             </div>
           </div>
-          <div>
+          <div className="col-span-2">
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={form.auto_sync_containers}
+                onChange={(e) => setForm({ ...form, auto_sync_containers: e.target.checked })}
+              />
+              Include in automatic Docker container sync
+            </label>
+          </div>
+          <div className="col-span-2">
             <label className="block text-sm text-gray-400 mb-1">Notes</label>
             <textarea className="input h-20" value={form.notes || ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>

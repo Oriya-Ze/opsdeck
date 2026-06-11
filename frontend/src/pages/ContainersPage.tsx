@@ -7,10 +7,14 @@ import { LoadingSpinner } from '../components/LoadingSpinner'
 import { PageHeader } from '../components/PageHeader'
 import { SearchInput } from '../components/SearchInput'
 import { EmptyState } from '../components/EmptyState'
-import { formatRelative } from '../utils/format'
+import { formatDate, formatRelative } from '../utils/format'
 
 export function ContainersPage() {
-  const { data: containers, loading, error, refetch } = useFetch(() => api.getContainers())
+  const { data: containers, loading, error, refetch } = useFetch(
+    () => api.getContainers(),
+    [],
+    { pollIntervalMs: 60_000 },
+  )
   const { data: nodes } = useFetch(() => api.getNodes())
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -61,7 +65,7 @@ export function ContainersPage() {
     <div>
       <PageHeader
         title="Docker Containers"
-        description="Live Docker containers synced via SSH from your nodes"
+        description="Live Docker containers synced via SSH. Enable auto-sync in Settings or sync manually below."
       />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -142,7 +146,9 @@ export function ContainersPage() {
                   <td className="table-cell font-mono">{c.cpu_usage}%</td>
                   <td className="table-cell font-mono">{c.memory_usage} MB</td>
                   <td className="table-cell">{c.restart_count}</td>
-                  <td className="table-cell text-gray-500">{formatRelative(c.updated_at)}</td>
+                  <td className="table-cell text-gray-500" title={formatDate(c.updated_at)}>
+                    {formatRelative(c.updated_at)}
+                  </td>
                 </tr>
               ))}
             </tbody>

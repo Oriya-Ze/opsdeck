@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle, Copy, Key, Link2, RefreshCw, Shield, Trash2, Webhook } from 'lucide-react'
+import { CheckCircle, Container, Copy, Key, RefreshCw, Shield, Trash2, Webhook } from 'lucide-react'
 import { api } from '../api/client'
 import { PageHeader } from '../components/PageHeader'
-import type { SshGenerateResponse, SshSettings } from '../types'
+import type { SshGenerateResponse, SshSettings, SyncSettings } from '../types'
+import { formatRelative } from '../utils/format'
 
 const comingSoon = [
   { icon: Shield, title: 'Authentication', description: 'OAuth2, LDAP, or API key authentication (coming soon)' },
-  { icon: Link2, title: 'Ansible Runner', description: 'Connect Ansible playbooks for real automation tasks' },
   { icon: Webhook, title: 'Webhooks & Notifications', description: 'Slack, Discord, and email alert integrations' },
 ]
 
@@ -24,13 +24,22 @@ export function SettingsPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [generated, setGenerated] = useState<SshGenerateResponse | null>(null)
   const [copied, setCopied] = useState(false)
+  const [syncSettings, setSyncSettings] = useState<SyncSettings | null>(null)
+  const [syncEnabled, setSyncEnabled] = useState(false)
+  const [syncInterval, setSyncInterval] = useState(300)
+  const [syncSaving, setSyncSaving] = useState(false)
+  const [syncRunning, setSyncRunning] = useState(false)
+  const [syncRunMsg, setSyncRunMsg] = useState<string | null>(null)
 
   const loadSettings = async () => {
     setLoading(true)
     try {
-      const data = await api.getSshSettings()
-      setSshSettings(data)
-      if (data.ssh_user) setSshUser(data.ssh_user)
+      const [sshData, syncData] = await Promise.all([api.getSshSettings(), api.getSyncSettings()])
+      setSshSettings(sshData)
+      if (sshData.ssh_user) setSshUser(sshData.ssh_user)
+      setSyncSettings(syncData)
+      setSyncEnabled(syncData.containers_auto_sync_enabled)
+      setSyncInterval(syncData.containers_sync_interval_seconds)
     } finally {
       setLoading(false)
     }
@@ -109,6 +118,38 @@ export function SettingsPage() {
       setTestResult({ success: false, message: err instanceof Error ? err.message : 'Test failed' })
     } finally {
       setTesting(false)
+    }
+  }
+
+  const handleSaveSync = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSyncSaving(true)
+    setSyncRunMsg(null)
+    try {
+      const saved = await api.saveSyncSettings({
+        containers_auto_sync_enabled: syncEnabled,
+        containers_sync_interval_seconds: syncInterval,
+      })
+      setSyncSettings(saved)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save sync settings')
+    } finally {
+      setSyncSaving(false)
+    }
+  }
+
+  const handleRunSyncNow = async () => {
+    setSyncRunning(true)
+    setSyncRunMsg(null)
+    try {
+      const result = await api.runContainerAutoSync()
+      setSyncRunMsg(result.summary)
+      const refreshed = await api.getSyncSettings()
+      setSyncSettings(refreshed)
+    } catch (err) {
+      setSyncRunMsg(err instanceof Error ? err.message : 'Sync failed')
+    } finally {
+      setSyncRunning(false)
     }
   }
 
@@ -258,8 +299,76 @@ export function SettingsPage() {
         )}
       </div>
 
+      {/* Container auto-sync */}
+      <div className="card mb-6">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 rounded-lg bg-accent/15 text-accent">
+            <Container size={22} />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-white text-lg">Container Auto-Sync</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Periodically sync Docker containers from nodes with auto-sync enabled.
+              Requires SSH credentials configured above.
+            </p>
+            {syncSettings?.last_auto_sync_at && (
+              <p className="text-xs text-gray-500 mt-2">
+                Last sync: {formatRelative(syncSettings.last_auto_sync_at)}
+                {syncSettings.last_auto_sync_summary && (
+                  <span className="text-gray-400"> — {syncSettings.last_auto_sync_summary}</span>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveSync} className="space-y-4">
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={syncEnabled}
+              onChange={(e) => setSyncEnabled(e.target.checked)}
+            />
+            Enable automatic container sync
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Sync interval</label>
+              <select
+                className="select sm:w-48"
+                value={syncInterval}
+                onChange={(e) => setSyncInterval(+e.target.value)}
+              >
+                <option value={60}>Every 1 minute</option>
+                <option value={300}>Every 5 minutes</option>
+                <option value={900}>Every 15 minutes</option>
+                <option value={1800}>Every 30 minutes</option>
+                <option value={3600}>Every 1 hour</option>
+              </select>
+            </div>
+            <button type="submit" className="btn-primary" disabled={syncSaving}>
+              {syncSaving ? 'Saving...' : 'Save Sync Settings'}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary flex items-center gap-2"
+              onClick={handleRunSyncNow}
+              disabled={syncRunning}
+            >
+              <RefreshCw size={14} className={syncRunning ? 'animate-spin' : ''} />
+              {syncRunning ? 'Syncing...' : 'Sync Now'}
+            </button>
+          </div>
+          {syncRunMsg && (
+            <p className={`text-sm ${syncRunMsg.includes('failed') ? 'text-red-400' : 'text-emerald-400'}`}>
+              {syncRunMsg}
+            </p>
+          )}
+        </form>
+      </div>
+
       {/* Coming soon integrations */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {comingSoon.map(({ icon: Icon, title, description }) => (
           <div key={title} className="card opacity-75">
             <div className="flex items-start gap-4">

@@ -101,6 +101,12 @@ export const api = {
   generateSshKey: () =>
     request<import('../types').SshGenerateResponse>('/settings/ssh/generate', { method: 'POST' }),
 
+  getSyncSettings: () => request<import('../types').SyncSettings>('/settings/sync'),
+  saveSyncSettings: (data: Partial<import('../types').SyncSettings>) =>
+    request<import('../types').SyncSettings>('/settings/sync', { method: 'PUT', body: JSON.stringify(data) }),
+  runContainerAutoSync: () =>
+    request<import('../types').AutoSyncRunResponse>('/settings/sync/run-now', { method: 'POST' }),
+
   testNodeConnection: (id: string) =>
     request<import('../types').NodeTestConnectionResponse>(`/nodes/${id}/test-connection`, { method: 'POST' }),
 }

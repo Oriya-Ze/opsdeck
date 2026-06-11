@@ -7,6 +7,7 @@ from app.models.health_check import HealthCheck
 from app.models.activity_log import ActivityLog
 from app.models.ssh_settings import SshSettings
 from app.models.custom_playbook import CustomPlaybook
+from app.models.sync_settings import SyncSettings
 
 __all__ = [
     "Node",
@@ -18,4 +19,5 @@ __all__ = [
     "ActivityLog",
     "SshSettings",
     "CustomPlaybook",
+    "SyncSettings",
 ]

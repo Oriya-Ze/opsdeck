@@ -1,11 +1,22 @@
+/** API datetimes are stored as UTC but serialized without a timezone suffix. */
+export function parseApiDate(date: string): Date {
+  const trimmed = date.trim()
+  if (!trimmed) return new Date(NaN)
+  if (trimmed.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(trimmed)) {
+    return new Date(trimmed)
+  }
+  return new Date(`${trimmed}Z`)
+}
+
 export function formatDate(date: string | null | undefined): string {
   if (!date) return '—'
-  return new Date(date).toLocaleString()
+  return parseApiDate(date).toLocaleString()
 }
 
 export function formatRelative(date: string | null | undefined): string {
   if (!date) return 'Never'
-  const diff = Date.now() - new Date(date).getTime()
+  const diff = Date.now() - parseApiDate(date).getTime()
+  if (diff < 0) return 'Just now'
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'Just now'
   if (mins < 60) return `${mins}m ago`

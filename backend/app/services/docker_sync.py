@@ -126,7 +126,9 @@ def _apply_restart_counts(containers: list[DockerContainerInfo], stdout: str) ->
                 pass
 
 
-def fetch_containers_from_node(node: Node, db: Session) -> list[DockerContainerInfo]:
+def fetch_containers_from_node(
+    node: Node, db: Session, *, ssh_timeout: int = 60
+) -> list[DockerContainerInfo]:
     if not is_ssh_configured(db):
         raise ValueError("SSH credentials not configured. Add them in Settings first.")
 
@@ -138,7 +140,7 @@ def fetch_containers_from_node(node: Node, db: Session) -> list[DockerContainerI
     username = resolve_node_ssh_user(node, global_user)
 
     ps_result = exec_command(
-        node.ip_address, node.ssh_port, username, private_key, DOCKER_PS_CMD, timeout=60
+        node.ip_address, node.ssh_port, username, private_key, DOCKER_PS_CMD, timeout=ssh_timeout
     )
     if not ps_result.success and not ps_result.stdout:
         err = ps_result.error or ps_result.stderr or "Failed to list Docker containers"
@@ -159,13 +161,13 @@ def fetch_containers_from_node(node: Node, db: Session) -> list[DockerContainerI
             raise ValueError("Docker is not installed on this node")
 
     stats_result = exec_command(
-        node.ip_address, node.ssh_port, username, private_key, DOCKER_STATS_CMD, timeout=60
+        node.ip_address, node.ssh_port, username, private_key, DOCKER_STATS_CMD, timeout=ssh_timeout
     )
     if stats_result.stdout:
         _apply_stats(containers, stats_result.stdout)
 
     restart_result = exec_command(
-        node.ip_address, node.ssh_port, username, private_key, DOCKER_RESTART_CMD, timeout=60
+        node.ip_address, node.ssh_port, username, private_key, DOCKER_RESTART_CMD, timeout=ssh_timeout
     )
     if restart_result.stdout:
         _apply_restart_counts(containers, restart_result.stdout)
@@ -173,9 +175,15 @@ def fetch_containers_from_node(node: Node, db: Session) -> list[DockerContainerI
     return containers
 
 
-def sync_node_containers(db: Session, node: Node) -> tuple[list[Container], int, int]:
+def sync_node_containers(
+    db: Session,
+    node: Node,
+    *,
+    log_summary: bool = True,
+    ssh_timeout: int = 60,
+) -> tuple[list[Container], int, int]:
     """Sync containers for a node. Returns (containers, created_or_updated, removed)."""
-    live = fetch_containers_from_node(node, db)
+    live = fetch_containers_from_node(node, db, ssh_timeout=ssh_timeout)
     live_names = {c.name for c in live}
     now = datetime.utcnow()
 
@@ -236,13 +244,14 @@ def sync_node_containers(db: Session, node: Node) -> tuple[list[Container], int,
         .all()
     )
 
-    log_activity(
-        db,
-        event_type=ActivityEventType.CONTAINER_STATUS_CHANGED.value,
-        message=f"Docker sync on '{node.name}': {len(live)} container(s) synced, {removed} removed",
-        severity=ActivitySeverity.INFO.value,
-        related_entity_type="node",
-        related_entity_id=node.id,
-    )
+    if log_summary:
+        log_activity(
+            db,
+            event_type=ActivityEventType.CONTAINER_STATUS_CHANGED.value,
+            message=f"Docker sync on '{node.name}': {len(live)} container(s) synced, {removed} removed",
+            severity=ActivitySeverity.INFO.value,
+            related_entity_type="node",
+            related_entity_id=node.id,
+        )
 
     return containers, updated, removed

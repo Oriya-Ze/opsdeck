@@ -13,6 +13,7 @@ export interface Node {
   ram_usage: number
   disk_usage: number
   uptime: string
+  auto_sync_containers: boolean
   last_checked_at: string | null
   notes: string | null
   created_at: string
@@ -152,6 +153,23 @@ export type ContainerCreate = Omit<Container, 'id' | 'created_at' | 'updated_at'
 export type ContainerUpdate = Partial<ContainerCreate>
 export type WorkloadCreate = Omit<Workload, 'id' | 'created_at' | 'updated_at'>
 export type WorkloadUpdate = Partial<WorkloadCreate>
+
+export interface SyncSettings {
+  containers_auto_sync_enabled: boolean
+  containers_sync_interval_seconds: number
+  last_auto_sync_at: string | null
+  last_auto_sync_summary: string | null
+  updated_at: string | null
+}
+
+export interface AutoSyncRunResponse {
+  nodes_attempted: number
+  nodes_succeeded: number
+  nodes_failed: number
+  total_containers: number
+  summary: string
+  errors: string[]
+}
 
 export interface SshSettings {
   configured: boolean

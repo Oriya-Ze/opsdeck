@@ -9,6 +9,9 @@ from app.schemas.ssh_settings import (
     SshTestRequest,
     SshTestResponse,
 )
+from app.schemas.sync_settings import AutoSyncRunResponse, SyncSettingsResponse, SyncSettingsUpdate
+from app.services.container_auto_sync import run_containers_auto_sync_async
+from app.services.sync_settings_service import get_or_create_sync_settings, update_sync_settings
 from app.services.activity_service import log_activity
 from app.services.encryption import decrypt_value
 from app.services.ssh_client import test_connection
@@ -116,3 +119,35 @@ def test_ssh_connection(data: SshTestRequest, db: Session = Depends(get_db)):
 def generate_ssh_key():
     keys = generate_ssh_keypair()
     return SshGenerateResponse(**keys)
+
+
+@router.get("/sync", response_model=SyncSettingsResponse)
+def get_sync_config(db: Session = Depends(get_db)):
+    return get_or_create_sync_settings(db)
+
+
+@router.put("/sync", response_model=SyncSettingsResponse)
+def save_sync_config(data: SyncSettingsUpdate, db: Session = Depends(get_db)):
+    saved = update_sync_settings(db, data.model_dump(exclude_unset=True))
+    log_activity(
+        db,
+        event_type=ActivityEventType.NODE_UPDATED.value,
+        message="Container auto-sync settings updated",
+        severity=ActivitySeverity.INFO.value,
+        related_entity_type="settings",
+        related_entity_id=None,
+    )
+    return saved
+
+
+@router.post("/sync/run-now", response_model=AutoSyncRunResponse)
+async def run_sync_now():
+    result = await run_containers_auto_sync_async(force=True)
+    return AutoSyncRunResponse(
+        nodes_attempted=result.nodes_attempted,
+        nodes_succeeded=result.nodes_succeeded,
+        nodes_failed=result.nodes_failed,
+        total_containers=result.total_containers,
+        summary=result.summary,
+        errors=result.errors,
+    )
