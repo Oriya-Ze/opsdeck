@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.schemas.runtime import RuntimeConfigResponse
 
 router = APIRouter(tags=["System"])
 
@@ -29,3 +30,13 @@ def version():
         "version": settings.APP_VERSION,
         "description": "HomeLab management platform for DevOps users",
     }
+
+
+@router.get("/runtime", response_model=RuntimeConfigResponse)
+def runtime_config():
+    return RuntimeConfigResponse(
+        app_env=settings.APP_ENV,
+        auth_mode=settings.AUTH_MODE.value,
+        prometheus_enabled=settings.PROMETHEUS_ENABLED,
+        storage_type=settings.STORAGE_TYPE.value,
+    )

@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: opsdeck
-      POSTGRES_PASSWORD: opsdeck
-      POSTGRES_DB: opsdeck
+      POSTGRES_USER: ${POSTGRES_USER:-opsdeck}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opsdeck}
+      POSTGRES_DB: ${POSTGRES_DB:-opsdeck}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U opsdeck -d opsdeck"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opsdeck} -d ${POSTGRES_DB:-opsdeck}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,14 +20,21 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://opsdeck:opsdeck@postgres:5432/opsdeck
-      CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
-      ENCRYPTION_KEY: opsdeck-dev-key-change-in-production-32b=
-      PROMETHEUS_FILE_SD_DIR: /app/prometheus/file_sd
-      PROMETHEUS_INTERNAL_URL: http://prometheus:9090
-      PROMETHEUS_URL: http://localhost:9090
-      GRAFANA_URL: http://localhost:3001
-      GRAFANA_EMBED_URL: http://localhost:3001/d/opsdeck-overview/opsdeck-overview?orgId=1&theme=dark&kiosk
+      APP_ENV: ${APP_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      AUTH_MODE: ${AUTH_MODE:-disabled}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://opsdeck:opsdeck@postgres:5432/opsdeck}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-opsdeck-dev-key-change-in-production-32b=}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-true}
+      PROMETHEUS_FILE_SD_DIR: ${PROMETHEUS_FILE_SD_DIR:-/app/prometheus/file_sd}
+      PROMETHEUS_INTERNAL_URL: ${PROMETHEUS_INTERNAL_URL:-http://prometheus:9090}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://localhost:9090}
+      GRAFANA_URL: ${GRAFANA_URL:-http://localhost:3001}
+      GRAFANA_EMBED_URL: ${GRAFANA_EMBED_URL:-http://localhost:3001/d/opsdeck-overview/opsdeck-overview?orgId=1&theme=dark&kiosk}
     volumes:
       - ./prometheus/file_sd:/app/prometheus/file_sd
     depends_on:
@@ -75,8 +82,8 @@ services:
     ports:
       - "3001:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: opsdeck
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-opsdeck}
       GF_USERS_DEFAULT_THEME: dark
       GF_SECURITY_ALLOW_EMBEDDING: "true"
       GF_AUTH_ANONYMOUS_ENABLED: "true"

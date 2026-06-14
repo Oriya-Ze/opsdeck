@@ -167,6 +167,13 @@ export interface PrometheusTarget {
   labels: Record<string, string>
 }
 
+export interface RuntimeConfig {
+  app_env: string
+  auth_mode: string
+  prometheus_enabled: boolean
+  storage_type: string
+}
+
 export interface MonitoringStatus {
   prometheus_url: string
   grafana_url: string

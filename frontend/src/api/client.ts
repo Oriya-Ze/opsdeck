@@ -122,6 +122,8 @@ export const api = {
 
   getTerminalOptions: () => request<import('../types').TerminalOptionsResponse>('/terminal/options'),
 
+  getRuntimeConfig: () => request<import('../types').RuntimeConfig>('/runtime'),
+
   testNodeConnection: (id: string) =>
     request<import('../types').NodeTestConnectionResponse>(`/nodes/${id}/test-connection`, { method: 'POST' }),
 }

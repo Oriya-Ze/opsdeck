@@ -22,6 +22,11 @@ from app.services.prometheus_targets import build_node_exporter_targets, get_tar
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
 
 
+def _require_prometheus() -> None:
+    if not settings.PROMETHEUS_ENABLED:
+        raise HTTPException(status_code=503, detail="Prometheus monitoring is disabled")
+
+
 def _status_response(db: Session) -> MonitoringStatusResponse:
     status = get_targets_status()
     return MonitoringStatusResponse(
@@ -82,12 +87,18 @@ def monitoring_status(db: Session = Depends(get_db)):
 
 @router.post("/targets/refresh", response_model=MonitoringStatusResponse)
 def refresh_prometheus_targets(db: Session = Depends(get_db)):
+    _require_prometheus()
     write_prometheus_targets(db)
     return _status_response(db)
 
 
 @router.get("/overview", response_model=MonitoringOverviewResponse)
 def monitoring_overview():
+    if not settings.PROMETHEUS_ENABLED:
+        return MonitoringOverviewResponse(
+            prometheus_reachable=False,
+            prometheus_error="Prometheus monitoring is disabled",
+        )
     try:
         metrics = get_overview_metrics()
         return MonitoringOverviewResponse(
@@ -110,6 +121,7 @@ def monitoring_overview():
 
 @router.get("/prometheus/targets", response_model=ScrapeTargetsResponse)
 def prometheus_scrape_targets():
+    _require_prometheus()
     try:
         return _parse_scrape_targets(get_targets())
     except PrometheusApiError as exc:
@@ -118,6 +130,7 @@ def prometheus_scrape_targets():
 
 @router.post("/nodes/sync", response_model=NodePrometheusSyncResponse)
 def sync_nodes_from_prometheus_now(db: Session = Depends(get_db)):
+    _require_prometheus()
     result = sync_nodes_from_prometheus(db)
     return NodePrometheusSyncResponse(
         nodes_attempted=result.nodes_attempted,
@@ -135,6 +148,7 @@ def prometheus_query_range(
     hours: float = Query(6, ge=0.25, le=168),
     step: str = Query("60s"),
 ):
+    _require_prometheus()
     end = time.time()
     start = end - (hours * 3600)
     try:

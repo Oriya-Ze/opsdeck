@@ -1,29 +1,107 @@
-name: Test Docker Compose and a few tests
+name: CI/CD
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
   push:
-    branches: [ "main" ]
+    branches: [main]
+
+permissions:
+  contents: read
+
 jobs:
-  build-test-push:
+  smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: docker compose up
+      - name: Docker compose up
         run: docker compose up -d --build --wait --wait-timeout 120
 
-      - name: smoke test for backend
+      - name: Smoke test backend
         run: curl -fsS "http://localhost:8000/api/health"
 
-      - name: smoke test for frontend
+      - name: Smoke test runtime config
+        run: curl -fsS "http://localhost:8000/api/runtime"
+
+      - name: Smoke test frontend
         run: curl -fsS "http://localhost:3000"
 
-      - name: show logs on failure
-        run: docker compose logs
+      - name: Show logs on failure
         if: failure()
+        run: docker compose logs
 
-      - name: docker compose down
-        run: docker compose down -v
+      - name: Docker compose down
         if: always()
+        run: docker compose down -v
+
+  push-dockerhub:
+    needs: smoke
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/opsdeck-backend:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/opsdeck-backend:latest
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v7
+        with:
+          context: frontend/
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/opsdeck-frontend:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/opsdeck-frontend:latest
+
+  push-ecr:
+    needs: smoke
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend to ECR
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_BACKEND_REPOSITORY || 'opsdeck-backend' }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_BACKEND_REPOSITORY || 'opsdeck-backend' }}:latest
+
+      - name: Build and push frontend to ECR
+        uses: docker/build-push-action@v7
+        with:
+          context: frontend/
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_FRONTEND_REPOSITORY || 'opsdeck-frontend' }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_FRONTEND_REPOSITORY || 'opsdeck-frontend' }}:latest

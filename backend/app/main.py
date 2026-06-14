@@ -6,22 +6,27 @@ from prometheus_client import make_asgi_app
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.middleware.metrics import PrometheusMiddleware
 from app.services.metrics_collector import start_metrics_collector, stop_metrics_collector
 from app.services.prometheus_node_sync import start_prometheus_node_sync, stop_prometheus_node_sync
 from app.services.prometheus_targets import start_prometheus_targets_writer, stop_prometheus_targets_writer
 from app.services.sync_scheduler import start_auto_sync_scheduler, stop_auto_sync_scheduler
 
+configure_logging()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     start_auto_sync_scheduler()
     start_metrics_collector()
-    start_prometheus_targets_writer()
-    start_prometheus_node_sync()
+    if settings.PROMETHEUS_ENABLED:
+        start_prometheus_targets_writer()
+        start_prometheus_node_sync()
     yield
-    await stop_prometheus_node_sync()
-    await stop_prometheus_targets_writer()
+    if settings.PROMETHEUS_ENABLED:
+        await stop_prometheus_node_sync()
+        await stop_prometheus_targets_writer()
     await stop_metrics_collector()
     await stop_auto_sync_scheduler()
 
@@ -37,7 +42,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -175,22 +175,26 @@ export function MonitoringPage() {
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
               Refresh
             </button>
-            <a
-              href={status?.prometheus_url || 'http://localhost:9090'}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-secondary flex items-center gap-2"
-            >
-              <ExternalLink size={14} /> Prometheus
-            </a>
-            <a
-              href={status?.grafana_url || 'http://localhost:3001'}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-secondary flex items-center gap-2"
-            >
-              <ExternalLink size={14} /> Grafana
-            </a>
+            {status?.prometheus_url ? (
+              <a
+                href={status.prometheus_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secondary flex items-center gap-2"
+              >
+                <ExternalLink size={14} /> Prometheus
+              </a>
+            ) : null}
+            {status?.grafana_url ? (
+              <a
+                href={status.grafana_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secondary flex items-center gap-2"
+              >
+                <ExternalLink size={14} /> Grafana
+              </a>
+            ) : null}
           </div>
         }
       />
@@ -224,15 +228,18 @@ export function MonitoringPage() {
 
       {tab === 'grafana' && (
         <div className="card p-0 overflow-hidden">
-          <iframe
-            title="OpsDeck Grafana Dashboard"
-            src={
-              status?.grafana_embed_url ||
-              'http://localhost:3001/d/opsdeck-overview/opsdeck-overview?orgId=1&theme=dark&kiosk'
-            }
-            className="w-full border-0"
-            style={{ height: '720px' }}
-          />
+          {status?.grafana_embed_url ? (
+            <iframe
+              title="OpsDeck Grafana Dashboard"
+              src={status.grafana_embed_url}
+              className="w-full border-0"
+              style={{ height: '720px' }}
+            />
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              Grafana embed URL is not configured. Set GRAFANA_EMBED_URL in the backend environment.
+            </div>
+          )}
         </div>
       )}
 
