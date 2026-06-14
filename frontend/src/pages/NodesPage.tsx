@@ -27,6 +27,7 @@ const defaultNode: NodeCreate = {
   disk_usage: 0,
   uptime: 'unknown',
   auto_sync_containers: true,
+  auto_backup_enabled: false,
   notes: '',
 }
 
@@ -74,6 +75,7 @@ export function NodesPage() {
       disk_usage: node.disk_usage,
       uptime: node.uptime,
       auto_sync_containers: node.auto_sync_containers,
+      auto_backup_enabled: node.auto_backup_enabled,
       notes: node.notes || '',
     })
     setModalOpen(true)
@@ -237,6 +239,16 @@ export function NodesPage() {
                 onChange={(e) => setForm({ ...form, auto_sync_containers: e.target.checked })}
               />
               Include in automatic Docker container sync
+            </label>
+          </div>
+          <div className="col-span-2">
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={form.auto_backup_enabled}
+                onChange={(e) => setForm({ ...form, auto_backup_enabled: e.target.checked })}
+              />
+              Include in automatic node backups (/etc, /home → local or S3)
             </label>
           </div>
           <div className="col-span-2">

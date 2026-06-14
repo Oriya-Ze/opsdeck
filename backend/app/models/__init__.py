@@ -8,6 +8,7 @@ from app.models.activity_log import ActivityLog
 from app.models.ssh_settings import SshSettings
 from app.models.custom_playbook import CustomPlaybook
 from app.models.sync_settings import SyncSettings
+from app.models.backup import BackupSettings, NodeBackup
 
 __all__ = [
     "Node",
@@ -20,4 +21,6 @@ __all__ = [
     "SshSettings",
     "CustomPlaybook",
     "SyncSettings",
+    "BackupSettings",
+    "NodeBackup",
 ]

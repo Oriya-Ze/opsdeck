@@ -10,6 +10,8 @@ import {
   RefreshCw,
   HardDrive,
   Database,
+  RotateCcw,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react'
 import { api } from '../api/client'
@@ -17,7 +19,7 @@ import { useFetch } from '../hooks/useFetch'
 import { StatusBadge } from '../components/StatusBadge'
 import { UsageBar } from '../components/UsageBar'
 import { LoadingSpinner } from '../components/LoadingSpinner'
-import { formatDate, formatRelative } from '../utils/format'
+import { formatDate, formatRelative, formatBytes } from '../utils/format'
 
 const ACTION_ICONS: Record<string, LucideIcon> = {
   'health-check': HeartPulse,
@@ -47,6 +49,10 @@ export function NodeDetailPage() {
     () => api.getWorkloads(id!),
     [id],
   )
+  const { data: backups, loading: backupsLoading, refetch: refetchBackups } = useFetch(
+    () => api.getNodeBackups(id!),
+    [id],
+  )
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [testingConn, setTestingConn] = useState(false)
   const [syncingContainers, setSyncingContainers] = useState(false)
@@ -54,6 +60,10 @@ export function NodeDetailPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null)
   const [workloadSyncResult, setWorkloadSyncResult] = useState<string | null>(null)
   const [connResult, setConnResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [backingUp, setBackingUp] = useState(false)
+  const [backupResult, setBackupResult] = useState<string | null>(null)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const nodeServices = services?.filter((s) => s.node_id === id) || []
   const nodeJobs = jobs?.filter((j) => j.target_id === id).slice(0, 5) || []
@@ -107,10 +117,55 @@ export function NodeDetailPage() {
       await api.runNodeAction(id!, action)
       refetch()
       refetchHC()
+      if (action === 'run-backup') refetchBackups()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Action failed')
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const createBackup = async () => {
+    setBackingUp(true)
+    setBackupResult(null)
+    try {
+      const result = await api.createNodeBackup(id!)
+      setBackupResult(result.message)
+      refetchBackups()
+    } catch (err) {
+      setBackupResult(err instanceof Error ? err.message : 'Backup failed')
+    } finally {
+      setBackingUp(false)
+    }
+  }
+
+  const restoreBackup = async (backupId: string, filename: string) => {
+    const confirmed = window.confirm(
+      `Restore "${filename}" to this node?\n\nThis will overwrite /etc and /home on ${node?.name}. This action cannot be undone.`,
+    )
+    if (!confirmed) return
+    setRestoringId(backupId)
+    setBackupResult(null)
+    try {
+      const result = await api.restoreNodeBackup(id!, backupId)
+      setBackupResult(result.message)
+    } catch (err) {
+      setBackupResult(err instanceof Error ? err.message : 'Restore failed')
+    } finally {
+      setRestoringId(null)
+    }
+  }
+
+  const deleteBackup = async (backupId: string, filename: string) => {
+    if (!window.confirm(`Delete backup "${filename}"? This cannot be undone.`)) return
+    setDeletingId(backupId)
+    try {
+      await api.deleteNodeBackup(id!, backupId)
+      refetchBackups()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -184,6 +239,7 @@ export function NodeDetailPage() {
               ['Role', node.role.replace(/-/g, ' ')],
               ['Uptime', node.uptime],
               ['Last Checked', formatRelative(node.last_checked_at)],
+              ['Auto Backup', node.auto_backup_enabled ? 'Enabled' : 'Disabled'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <dt className="text-gray-400">{label}</dt>
@@ -337,6 +393,80 @@ export function NodeDetailPage() {
                   <StatusBadge status={j.status} />
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Node Backups</h2>
+              <p className="text-xs text-gray-500 mt-1">Archives /etc and /home — stored locally or in S3</p>
+            </div>
+            <button
+              className="btn-secondary flex items-center gap-2 text-xs py-1 px-2"
+              onClick={createBackup}
+              disabled={backingUp}
+            >
+              <HardDrive size={14} />
+              {backingUp ? 'Backing up...' : 'Backup Now'}
+            </button>
+          </div>
+          {backupResult && (
+            <p className={`text-xs mb-3 ${backupResult.toLowerCase().includes('fail') ? 'text-red-400' : 'text-emerald-400'}`}>
+              {backupResult}
+            </p>
+          )}
+          {backupsLoading ? (
+            <p className="text-gray-500 text-sm">Loading...</p>
+          ) : !backups || backups.length === 0 ? (
+            <p className="text-gray-500 text-sm">No backups yet. Click Backup Now to create one.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="table-header">Created</th>
+                    <th className="table-header">File</th>
+                    <th className="table-header">Size</th>
+                    <th className="table-header">Storage</th>
+                    <th className="table-header">Status</th>
+                    <th className="table-header text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {backups.map((b) => (
+                    <tr key={b.id} className="border-b border-border/50">
+                      <td className="table-cell text-gray-500">{formatDate(b.created_at)}</td>
+                      <td className="table-cell font-mono text-xs text-gray-300 max-w-[180px] truncate">{b.filename}</td>
+                      <td className="table-cell font-mono text-sm">{formatBytes(b.size_bytes)}</td>
+                      <td className="table-cell capitalize text-gray-400">{b.storage_type}</td>
+                      <td className="table-cell"><StatusBadge status={b.status} /></td>
+                      <td className="table-cell text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            className="btn-secondary flex items-center gap-1 text-xs py-1 px-2"
+                            onClick={() => restoreBackup(b.id, b.filename)}
+                            disabled={b.status !== 'completed' || restoringId !== null || deletingId !== null}
+                            title="Restore /etc and /home from this backup"
+                          >
+                            <RotateCcw size={12} />
+                            {restoringId === b.id ? 'Restoring...' : 'Restore'}
+                          </button>
+                          <button
+                            className="btn-secondary flex items-center gap-1 text-xs py-1 px-2 text-red-400 hover:text-red-300"
+                            onClick={() => deleteBackup(b.id, b.filename)}
+                            disabled={deletingId !== null || restoringId !== null}
+                          >
+                            <Trash2 size={12} />
+                            {deletingId === b.id ? '...' : 'Delete'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

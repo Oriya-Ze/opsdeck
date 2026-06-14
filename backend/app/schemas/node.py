@@ -19,6 +19,7 @@ class NodeBase(BaseModel):
     disk_usage: float = 0.0
     uptime: str = "unknown"
     auto_sync_containers: bool = True
+    auto_backup_enabled: bool = False
     notes: str | None = None
 
 
@@ -41,6 +42,7 @@ class NodeUpdate(BaseModel):
     disk_usage: float | None = None
     uptime: str | None = None
     auto_sync_containers: bool | None = None
+    auto_backup_enabled: bool | None = None
     notes: str | None = None
 
 

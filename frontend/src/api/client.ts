@@ -107,6 +107,20 @@ export const api = {
   runContainerAutoSync: () =>
     request<import('../types').AutoSyncRunResponse>('/settings/sync/run-now', { method: 'POST' }),
 
+  getBackupSettings: () => request<import('../types').BackupSettings>('/settings/backup'),
+  saveBackupSettings: (data: Partial<import('../types').BackupSettings>) =>
+    request<import('../types').BackupSettings>('/settings/backup', { method: 'PUT', body: JSON.stringify(data) }),
+  runBackupNow: () =>
+    request<import('../types').AutoBackupRunResponse>('/settings/backup/run-now', { method: 'POST' }),
+
+  getNodeBackups: (nodeId: string) => request<import('../types').NodeBackup[]>(`/nodes/${nodeId}/backups`),
+  createNodeBackup: (nodeId: string) =>
+    request<import('../types').BackupRunResponse>(`/nodes/${nodeId}/backups`, { method: 'POST' }),
+  restoreNodeBackup: (nodeId: string, backupId: string) =>
+    request<import('../types').BackupRunResponse>(`/nodes/${nodeId}/backups/${backupId}/restore`, { method: 'POST' }),
+  deleteNodeBackup: (nodeId: string, backupId: string) =>
+    request<void>(`/nodes/${nodeId}/backups/${backupId}`, { method: 'DELETE' }),
+
   getMonitoringStatus: () => request<import('../types').MonitoringStatus>('/monitoring/status'),
   refreshMonitoringTargets: () =>
     request<import('../types').MonitoringStatus>('/monitoring/targets/refresh', { method: 'POST' }),

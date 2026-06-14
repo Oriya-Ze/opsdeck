@@ -27,8 +27,10 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-opsdeck-dev-key-change-in-production-32b=}
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      BACKUP_LOCAL_DIR: ${BACKUP_LOCAL_DIR:-/app/backups}
       S3_BUCKET: ${S3_BUCKET:-}
       S3_REGION: ${S3_REGION:-}
+      S3_BACKUP_PREFIX: ${S3_BACKUP_PREFIX:-backups/}
       PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-true}
       PROMETHEUS_FILE_SD_DIR: ${PROMETHEUS_FILE_SD_DIR:-/app/prometheus/file_sd}
       PROMETHEUS_INTERNAL_URL: ${PROMETHEUS_INTERNAL_URL:-http://prometheus:9090}
@@ -37,6 +39,7 @@ services:
       GRAFANA_EMBED_URL: ${GRAFANA_EMBED_URL:-http://localhost:3001/d/opsdeck-overview/opsdeck-overview?orgId=1&theme=dark&kiosk}
     volumes:
       - ./prometheus/file_sd:/app/prometheus/file_sd
+      - ./backups:/app/backups
     depends_on:
       postgres:
         condition: service_healthy

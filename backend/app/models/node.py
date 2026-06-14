@@ -28,6 +28,7 @@ class Node(Base):
     uptime: Mapped[str] = mapped_column(String(100), default="unknown")
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     auto_sync_containers: Mapped[bool] = mapped_column(Boolean, default=True)
+    auto_backup_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -35,3 +36,4 @@ class Node(Base):
     services = relationship("Service", back_populates="node", cascade="all, delete-orphan")
     containers = relationship("Container", back_populates="node", cascade="all, delete-orphan")
     workloads = relationship("Workload", back_populates="node")
+    backups = relationship("NodeBackup", back_populates="node", cascade="all, delete-orphan")

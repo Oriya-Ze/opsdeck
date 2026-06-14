@@ -8,6 +8,7 @@ from app.models.job import Job
 from app.models.node import Node
 from app.services.activity_service import log_activity
 from app.services.ansible_runner import get_action_info, is_ansible_available, run_ansible_action
+from app.services.backup_service import create_node_backup
 from app.services.ssh_client import exec_command, resolve_node_ssh_user
 from app.services.ssh_credentials import get_decrypted_private_key, is_ssh_configured
 
@@ -44,6 +45,22 @@ def _execute_action(
     action_name: str,
 ) -> tuple[bool, str, str | None, str]:
     """Returns success, output_log, error_log, runner label."""
+    if action_name == "run-backup":
+        result = create_node_backup(db, node)
+        lines = [
+            "Runner: OpsDeck backup service",
+            f"Target: {node.name} ({node.ip_address}:{node.ssh_port}) as {username}",
+            "---",
+        ]
+        if result.message:
+            lines.append(result.message)
+        if result.backup:
+            lines.append(
+                f"Stored: {result.backup.filename} ({result.backup.size_bytes} bytes, "
+                f"{result.backup.storage_type})"
+            )
+        return result.success, "\n".join(lines), result.error, "backup"
+
     action = get_action_info(db, action_name)
     timeout = action.timeout_seconds if action else 120
 

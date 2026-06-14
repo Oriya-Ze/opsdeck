@@ -14,6 +14,7 @@ export interface Node {
   disk_usage: number
   uptime: string
   auto_sync_containers: boolean
+  auto_backup_enabled: boolean
   last_checked_at: string | null
   notes: string | null
   created_at: string
@@ -160,6 +161,46 @@ export interface SyncSettings {
   last_auto_sync_at: string | null
   last_auto_sync_summary: string | null
   updated_at: string | null
+}
+
+export interface BackupSettings {
+  auto_backup_enabled: boolean
+  backup_interval_seconds: number
+  last_auto_backup_at: string | null
+  last_auto_backup_summary: string | null
+  updated_at: string | null
+  storage_type: string
+  backup_local_dir: string | null
+  s3_bucket: string | null
+  s3_region: string | null
+}
+
+export interface NodeBackup {
+  id: string
+  node_id: string
+  filename: string
+  storage_type: string
+  storage_path: string
+  size_bytes: number
+  status: string
+  error_message: string | null
+  created_at: string
+}
+
+export interface BackupRunResponse {
+  success: boolean
+  message: string
+  backup: NodeBackup | null
+  error: string | null
+}
+
+export interface AutoBackupRunResponse {
+  nodes_attempted: number
+  nodes_succeeded: number
+  nodes_failed: number
+  skipped: boolean
+  summary: string
+  errors: string[] | null
 }
 
 export interface PrometheusTarget {

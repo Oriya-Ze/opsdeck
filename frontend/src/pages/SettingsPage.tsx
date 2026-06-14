@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle, Container, Copy, Key, LineChart, RefreshCw, Shield, Trash2, Webhook } from 'lucide-react'
+import { CheckCircle, Container, Copy, HardDrive, Key, LineChart, RefreshCw, Shield, Trash2, Webhook } from 'lucide-react'
 import { api } from '../api/client'
 import { PageHeader } from '../components/PageHeader'
-import type { SshGenerateResponse, SshSettings, SyncSettings } from '../types'
+import type { BackupSettings, SshGenerateResponse, SshSettings, SyncSettings } from '../types'
 import { formatRelative } from '../utils/format'
 
 const comingSoon = [
@@ -31,15 +31,28 @@ export function SettingsPage() {
   const [syncSaving, setSyncSaving] = useState(false)
   const [syncRunning, setSyncRunning] = useState(false)
   const [syncRunMsg, setSyncRunMsg] = useState<string | null>(null)
+  const [backupSettings, setBackupSettings] = useState<BackupSettings | null>(null)
+  const [backupEnabled, setBackupEnabled] = useState(false)
+  const [backupInterval, setBackupInterval] = useState(86400)
+  const [backupSaving, setBackupSaving] = useState(false)
+  const [backupRunning, setBackupRunning] = useState(false)
+  const [backupRunMsg, setBackupRunMsg] = useState<string | null>(null)
   const loadSettings = async () => {
     setLoading(true)
     try {
-      const [sshData, syncData] = await Promise.all([api.getSshSettings(), api.getSyncSettings()])
+      const [sshData, syncData, backupData] = await Promise.all([
+        api.getSshSettings(),
+        api.getSyncSettings(),
+        api.getBackupSettings(),
+      ])
       setSshSettings(sshData)
       if (sshData.ssh_user) setSshUser(sshData.ssh_user)
       setSyncSettings(syncData)
       setSyncEnabled(syncData.containers_auto_sync_enabled)
       setSyncInterval(syncData.containers_sync_interval_seconds)
+      setBackupSettings(backupData)
+      setBackupEnabled(backupData.auto_backup_enabled)
+      setBackupInterval(backupData.backup_interval_seconds)
     } finally {
       setLoading(false)
     }
@@ -150,6 +163,38 @@ export function SettingsPage() {
       setSyncRunMsg(err instanceof Error ? err.message : 'Sync failed')
     } finally {
       setSyncRunning(false)
+    }
+  }
+
+  const handleSaveBackup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBackupSaving(true)
+    setBackupRunMsg(null)
+    try {
+      const saved = await api.saveBackupSettings({
+        auto_backup_enabled: backupEnabled,
+        backup_interval_seconds: backupInterval,
+      })
+      setBackupSettings(saved)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save backup settings')
+    } finally {
+      setBackupSaving(false)
+    }
+  }
+
+  const handleRunBackupNow = async () => {
+    setBackupRunning(true)
+    setBackupRunMsg(null)
+    try {
+      const result = await api.runBackupNow()
+      setBackupRunMsg(result.summary)
+      const refreshed = await api.getBackupSettings()
+      setBackupSettings(refreshed)
+    } catch (err) {
+      setBackupRunMsg(err instanceof Error ? err.message : 'Backup failed')
+    } finally {
+      setBackupRunning(false)
     }
   }
 
@@ -362,6 +407,80 @@ export function SettingsPage() {
           {syncRunMsg && (
             <p className={`text-sm ${syncRunMsg.includes('failed') ? 'text-red-400' : 'text-emerald-400'}`}>
               {syncRunMsg}
+            </p>
+          )}
+        </form>
+      </div>
+
+      {/* Node backup storage */}
+      <div className="card mb-6">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 rounded-lg bg-accent/15 text-accent">
+            <HardDrive size={22} />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-white text-lg">Node Backups</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Archive /etc and /home from nodes with auto-backup enabled. Storage:{' '}
+              <span className="text-gray-300">{backupSettings?.storage_type || 'local'}</span>
+              {backupSettings?.storage_type === 'local' && backupSettings.backup_local_dir && (
+                <span className="text-gray-500"> ({backupSettings.backup_local_dir})</span>
+              )}
+              {backupSettings?.storage_type === 's3' && backupSettings.s3_bucket && (
+                <span className="text-gray-500"> (s3://{backupSettings.s3_bucket})</span>
+              )}
+            </p>
+            {backupSettings?.last_auto_backup_at && (
+              <p className="text-xs text-gray-500 mt-2">
+                Last auto backup: {formatRelative(backupSettings.last_auto_backup_at)}
+                {backupSettings.last_auto_backup_summary && (
+                  <span className="text-gray-400"> — {backupSettings.last_auto_backup_summary}</span>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveBackup} className="space-y-4">
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={backupEnabled}
+              onChange={(e) => setBackupEnabled(e.target.checked)}
+            />
+            Enable scheduled node backups (nodes with auto-backup enabled)
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Backup interval</label>
+              <select
+                className="select sm:w-48"
+                value={backupInterval}
+                onChange={(e) => setBackupInterval(+e.target.value)}
+              >
+                <option value={3600}>Every 1 hour</option>
+                <option value={21600}>Every 6 hours</option>
+                <option value={43200}>Every 12 hours</option>
+                <option value={86400}>Every 24 hours</option>
+                <option value={604800}>Every 7 days</option>
+              </select>
+            </div>
+            <button type="submit" className="btn-primary" disabled={backupSaving}>
+              {backupSaving ? 'Saving...' : 'Save Backup Settings'}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary flex items-center gap-2"
+              onClick={handleRunBackupNow}
+              disabled={backupRunning}
+            >
+              <RefreshCw size={14} className={backupRunning ? 'animate-spin' : ''} />
+              {backupRunning ? 'Backing up...' : 'Backup Now'}
+            </button>
+          </div>
+          {backupRunMsg && (
+            <p className={`text-sm ${backupRunMsg.includes('failed') ? 'text-red-400' : 'text-emerald-400'}`}>
+              {backupRunMsg}
             </p>
           )}
         </form>

@@ -67,7 +67,7 @@ BUILTIN_ACTIONS: list[JobActionInfo] = [
     JobActionInfo(
         name="run-backup",
         label="Run Backup",
-        description="Create a compressed archive of /etc and /home under /tmp.",
+        description="Archive /etc and /home, store in configured backup storage (local or S3).",
         requires_sudo=True,
         timeout_seconds=300,
     ),

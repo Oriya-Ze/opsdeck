@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     activity_logs,
+    backup,
     containers,
     dashboard,
     health_checks,
@@ -28,5 +29,7 @@ api_router.include_router(playbooks.router)
 api_router.include_router(health_checks.router)
 api_router.include_router(activity_logs.router)
 api_router.include_router(settings.router)
+api_router.include_router(backup.router)
+api_router.include_router(backup.node_backup_router)
 api_router.include_router(monitoring.router)
 api_router.include_router(terminal.router)

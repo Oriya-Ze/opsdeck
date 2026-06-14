@@ -41,8 +41,10 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = "opsdeck-dev-key-change-in-production-32b="
 
     STORAGE_TYPE: StorageType = StorageType.LOCAL
+    BACKUP_LOCAL_DIR: str = "/app/backups"
     S3_BUCKET: str | None = None
     S3_REGION: str | None = None
+    S3_BACKUP_PREFIX: str = "backups/"
 
     PROMETHEUS_ENABLED: bool = True
     PROMETHEUS_FILE_SD_DIR: str = "/app/prometheus/file_sd"
