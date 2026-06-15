@@ -1,0 +1,26 @@
+OpsDeck has been installed.
+
+Backend:  {{ include "opsdeck.backend.fullname" . }}:{{ .Values.backend.service.port }}
+Frontend: {{ include "opsdeck.frontend.fullname" . }}:{{ .Values.frontend.service.port }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress:
+{{- range .Values.ingress.hosts }}
+{{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}{{ .path }} -> {{ .service }}
+{{- end }}
+{{- end }}
+{{- else }}
+
+Local access (port-forward frontend — nginx proxies /api to backend):
+
+  kubectl port-forward svc/{{ include "opsdeck.frontend.fullname" . }} 3000:{{ .Values.frontend.service.port }}
+  open http://localhost:3000
+
+{{- end }}
+
+{{- if .Values.postgresql.enabled }}
+
+PostgreSQL is bundled in-cluster at {{ include "opsdeck.postgresql.fullname" . }}:{{ .Values.postgresql.service.port }}
+{{- end }}

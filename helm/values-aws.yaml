@@ -1,0 +1,51 @@
+# AWS / EKS overrides. Merged on top of values.yaml.
+# Usage: helm upgrade --install opsdeck ./helm -f helm/values-aws.yaml
+#
+# Prerequisites:
+#   - RDS PostgreSQL (set secrets.databaseUrl or secrets.existingSecret)
+#   - ECR images built by CI
+#   - IRSA on backend ServiceAccount for S3 backups (add when ready)
+
+replicaCount: 1
+
+postgresql:
+  enabled: false
+
+secrets:
+  existingSecret: opsdeck-secrets
+
+backend:
+  image:
+    repository: <account>.dkr.ecr.<region>.amazonaws.com/opsdeck-backend
+    tag: latest
+  backupStorage:
+    enabled: false
+  env:
+    APP_ENV: production
+    LOG_LEVEL: INFO
+    AUTH_MODE: cognito
+    CORS_ORIGINS: '["https://opsdeck.example.com"]'
+    STORAGE_TYPE: s3
+    S3_BUCKET: opsdeck-prod-backups
+    S3_REGION: us-east-1
+    S3_BACKUP_PREFIX: backups/
+    PROMETHEUS_ENABLED: "false"
+
+frontend:
+  image:
+    repository: <account>.dkr.ecr.<region>.amazonaws.com/opsdeck-frontend
+    tag: latest
+
+ingress:
+  enabled: true
+  className: alb
+  annotations: {}
+  hosts:
+    - host: opsdeck.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend

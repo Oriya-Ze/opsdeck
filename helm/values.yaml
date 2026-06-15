@@ -1,0 +1,102 @@
+# Default values for local / HomeLab (K3s, minikube).
+# AWS production overrides: helm upgrade --install opsdeck ./helm -f helm/values-aws.yaml
+
+replicaCount: 1
+imagePullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+
+# Bundled PostgreSQL for a self-contained local install. Disable on AWS (use RDS).
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+  auth:
+    username: opsdeck
+    password: opsdeck
+    database: opsdeck
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 1Gi
+
+# Credentials: leave existingSecret empty for local (values injected directly).
+# DATABASE_URL is auto-built from postgresql.auth when postgresql.enabled is true.
+# For AWS set existingSecret to a pre-created K8s Secret (database-url + encryption-key).
+secrets:
+  existingSecret: ""
+  encryptionKey: opsdeck-dev-key-change-in-production-32b=
+  databaseUrl: ""
+
+backend:
+  image:
+    repository: opsdeck-backend
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+  resources: {}
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  readinessProbe:
+    httpGet:
+      path: /api/ready
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  backupStorage:
+    enabled: true
+    size: 5Gi
+    mountPath: /app/backups
+  env:
+    APP_ENV: local
+    LOG_LEVEL: INFO
+    AUTH_MODE: disabled
+    CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+    STORAGE_TYPE: local
+    BACKUP_LOCAL_DIR: /app/backups
+    PROMETHEUS_ENABLED: "false"
+
+frontend:
+  image:
+    repository: opsdeck-frontend
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 3000
+  resources: {}
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 20
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: opsdeck.local
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

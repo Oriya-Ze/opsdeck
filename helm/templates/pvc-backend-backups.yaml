@@ -1,0 +1,15 @@
+{{- if and .Values.backend.backupStorage.enabled (eq (.Values.backend.env.STORAGE_TYPE | default "local") "local") }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "opsdeck.backend.fullname" . }}-backups
+  labels:
+    {{- include "opsdeck.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.backend.backupStorage.size }}
+{{- end }}

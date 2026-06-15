@@ -26,5 +26,4 @@ Thumbs.db
 # Docker
 postgres_data/
 backups/
-helm/
 deploy/
