@@ -94,8 +94,8 @@ jobs:
           context: backend/
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_BACKEND_REPOSITORY || 'opsdeck-backend' }}:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_BACKEND_REPOSITORY || 'opsdeck-backend' }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/opsdeck/backend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/opsdeck/backend:latest
 
       - name: Build and push frontend to ECR
         uses: docker/build-push-action@v7
@@ -103,5 +103,5 @@ jobs:
           context: frontend/
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_FRONTEND_REPOSITORY || 'opsdeck-frontend' }}:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_FRONTEND_REPOSITORY || 'opsdeck-frontend' }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/opsdeck/frontend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/opsdeck/frontend:latest
